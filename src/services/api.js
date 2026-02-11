@@ -1,0 +1,467 @@
+const BASE_URL = "http://127.0.0.1:8000";
+
+// ── Token helpers ──────────────────────────────────────────────────────────
+const getTokens = () => ({
+  accessToken: localStorage.getItem("accessToken"),
+  refreshToken: localStorage.getItem("refreshToken"),
+});
+
+const setTokens = (access, refresh) => {
+  if (access) localStorage.setItem("accessToken", access);
+  if (refresh) localStorage.setItem("refreshToken", refresh);
+};
+
+const clearTokens = () => {
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("user");
+  localStorage.removeItem("activeScopeId");
+  localStorage.removeItem("active");
+};
+
+// ── Scope helper ───────────────────────────────────────────────────────────
+export const getActiveScopeId = () => {
+  const direct = localStorage.getItem("activeScopeId");
+  if (direct) return direct;
+  try {
+    const raw = localStorage.getItem("active");
+    const a = raw ? JSON.parse(raw) : null;
+    if (a?.scope_id) return String(a.scope_id);
+  } catch {
+    /* ignore */
+  }
+  return null;
+};
+
+export const setActiveScopeId = (scopeId, scopeType, label) => {
+  localStorage.setItem("activeScopeId", String(scopeId));
+  localStorage.setItem(
+    "active",
+    JSON.stringify({ mode: "SCOPE", scope_type: scopeType, scope_id: scopeId, label })
+  );
+};
+
+// ── Error extraction (DRF field-level errors) ──────────────────────────────
+const extractError = (data, fallback) => {
+  if (!data) return fallback || "Request failed";
+  if (typeof data === "string") return data;
+
+  if (typeof data === "object" && !data.message && !data.detail && !data.error) {
+    const errors = [];
+    for (const [field, messages] of Object.entries(data)) {
+      const label = field.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+      if (Array.isArray(messages)) messages.forEach((m) => errors.push(`${label}: ${m}`));
+      else if (typeof messages === "string") errors.push(`${label}: ${messages}`);
+    }
+    if (errors.length) return errors.join("\n");
+  }
+
+  return data.message || data.detail || data.error || fallback || "Request failed";
+};
+
+// ── Core request function ──────────────────────────────────────────────────
+const apiRequest = async (endpoint, options = {}) => {
+  const { accessToken } = getTokens();
+  const scopeId = getActiveScopeId();
+
+  const config = {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+      ...(scopeId && { "X-Scope-ID": scopeId }),
+      ...options.headers,
+    },
+  };
+
+  let response = await fetch(`${BASE_URL}${endpoint}`, config);
+
+  // Auto-refresh on 401
+  if (response.status === 401 && endpoint !== "/api/v1/auth/token/refresh/") {
+    try {
+      await authAPI.refreshToken();
+      const { accessToken: refreshed } = getTokens();
+      config.headers = { ...config.headers, Authorization: `Bearer ${refreshed}` };
+      response = await fetch(`${BASE_URL}${endpoint}`, config);
+    } catch {
+      /* fall through */
+    }
+  }
+
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    if (!response.ok) throw new Error(response.statusText || "Request failed");
+    return {};
+  }
+
+  if (!response.ok) throw new Error(extractError(data, response.statusText));
+  return data;
+};
+
+// ── Generic CRUD factory ───────────────────────────────────────────────────
+const crud = (base) => ({
+  list: (params) => {
+    const qp = params
+      ? Object.entries(params).reduce((acc, [k, v]) => {
+          if (v !== undefined && v !== null && v !== "") acc[k] = v;
+          return acc;
+        }, {})
+      : {};
+    const qs = Object.keys(qp).length ? `?${new URLSearchParams(qp)}` : "";
+    return apiRequest(`${base}${qs}`);
+  },
+  get: (id) => apiRequest(`${base}${id}/`),
+  create: (payload) => apiRequest(base, { method: "POST", body: JSON.stringify(payload) }),
+  update: (id, payload) =>
+    apiRequest(`${base}${id}/`, { method: "PATCH", body: JSON.stringify(payload) }),
+  delete: (id) => apiRequest(`${base}${id}/`, { method: "DELETE" }),
+});
+
+// ── Auth API ───────────────────────────────────────────────────────────────
+export const authAPI = {
+  login: async (username, password) => {
+    const data = await apiRequest("/api/v1/auth/token/", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    });
+    if (data.access && data.refresh) setTokens(data.access, data.refresh);
+    return data;
+  },
+
+  refreshToken: async () => {
+    const { refreshToken } = getTokens();
+    if (!refreshToken) throw new Error("Missing refresh token");
+    const data = await apiRequest("/api/v1/auth/token/refresh/", {
+      method: "POST",
+      body: JSON.stringify({ refresh: refreshToken }),
+    });
+    if (data.access) setTokens(data.access, null);
+    return data;
+  },
+
+  logout: () => clearTokens(),
+  isAuthenticated: () => !!getTokens().accessToken,
+  getMe: () => apiRequest("/api/v1/accounts/me/"),
+  getAvailableScopes: () => apiRequest("/api/v1/accounts/me/available-scopes/"),
+};
+
+// ── Accounts API ───────────────────────────────────────────────────────────
+export const orgsAPI = crud("/api/v1/accounts/orgs/");
+export const companiesAPI = crud("/api/v1/accounts/companies/");
+export const entitiesAPI = crud("/api/v1/accounts/entities/");
+export const scopesAPI = crud("/api/v1/accounts/scopes/");
+export const usersAPI = {
+  ...crud("/api/v1/accounts/users/"),
+  changePassword: (payload) =>
+    apiRequest("/api/v1/accounts/change-password/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+};
+export const rolesAPI = crud("/api/v1/accounts/roles/");
+export const permissionsAPI = crud("/api/v1/accounts/permissions/");
+export const membershipsAPI = crud("/api/v1/accounts/memberships/");
+export const orgTreeAPI = {
+  list: () => apiRequest("/api/v1/accounts/org-tree/"),
+  get: (orgId) => apiRequest(`/api/v1/accounts/org-tree/${orgId}/`),
+};
+
+// ── Properties API ─────────────────────────────────────────────────────────
+export const sitesAPI = {
+  ...crud("/api/v1/properties/sites/"),
+  fullTree: (id) => apiRequest(`/api/v1/properties/sites/${id}/full-tree/`),
+  siteTypes: () => apiRequest("/api/v1/properties/site-types/"),
+};
+export const towersAPI = crud("/api/v1/properties/towers/");
+export const floorsAPI = crud("/api/v1/properties/floors/");
+export const unitsAPI = crud("/api/v1/properties/units/");
+export const amenitiesAPI = crud("/api/v1/properties/amenities/");
+export const siteAmenitiesAPI = crud("/api/v1/properties/site-amenities/");
+export const unitAmenitiesAPI = crud("/api/v1/properties/unit-amenities/");
+export const assetCategoriesAPI = crud("/api/v1/properties/asset-categories/");
+export const assetItemsAPI = crud("/api/v1/properties/asset-items/");
+export const unitAssetsAPI = crud("/api/v1/properties/unit-assets/");
+
+// ── Tenants API ────────────────────────────────────────────────────────────
+export const tenantCompaniesAPI = crud("/api/v1/tenants/companies/");
+export const tenantContactsAPI = crud("/api/v1/tenants/contacts/");
+export const tenantKycAPI = {
+  ...crud("/api/v1/tenants/kyc/"),
+  verify: (id) => apiRequest(`/api/v1/tenants/kyc/${id}/verify/`, { method: "POST" }),
+  reject: (id, reason) =>
+    apiRequest(`/api/v1/tenants/kyc/${id}/reject/`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
+};
+export const tenantPreferencesAPI = crud("/api/v1/tenants/preferences/");
+
+// ── Billing API ────────────────────────────────────────────────────────────
+export const siteBillingConfigAPI = {
+  ...crud("/api/v1/billing/site-billing-configs/"),
+  bySite: (siteId) => apiRequest(`/api/v1/billing/site-billing-configs/by-site/${siteId}/`),
+  resetCounter: (id, value) =>
+    apiRequest(`/api/v1/billing/site-billing-configs/${id}/reset-counter/`, {
+      method: "POST",
+      body: JSON.stringify({ value: value ?? 1 }),
+    }),
+  previewInvoiceNumber: (id) =>
+    apiRequest(`/api/v1/billing/site-billing-configs/${id}/preview-invoice-number/`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    }),
+};
+export const billingRulesAPI = {
+  ...crud("/api/v1/billing/billing-rules/"),
+  activate: (id) => apiRequest(`/api/v1/billing/billing-rules/${id}/activate/`, { method: "POST" }),
+  deactivate: (id) => apiRequest(`/api/v1/billing/billing-rules/${id}/deactivate/`, { method: "POST" }),
+  clone: (id) => apiRequest(`/api/v1/billing/billing-rules/${id}/clone/`, { method: "POST" }),
+};
+export const invoiceSchedulesAPI = {
+  ...crud("/api/v1/billing/invoice-schedules/"),
+  generate: (id) => apiRequest(`/api/v1/billing/invoice-schedules/${id}/generate/`, { method: "POST" }),
+};
+export const invoicesAPI = {
+  ...crud("/api/v1/billing/invoices/"),
+  send: (id) => apiRequest(`/api/v1/billing/invoices/${id}/send/`, { method: "POST" }),
+  dispute: (id, reason) =>
+    apiRequest(`/api/v1/billing/invoices/${id}/dispute/`, {
+      method: "POST",
+      body: JSON.stringify({ reason: reason ?? "" }),
+    }),
+  resolveDispute: (id) =>
+    apiRequest(`/api/v1/billing/invoices/${id}/resolve-dispute/`, { method: "POST" }),
+  overdue: () => apiRequest("/api/v1/billing/invoices/overdue/"),
+  summary: () => apiRequest("/api/v1/billing/invoices/summary/"),
+};
+export const paymentsAPI = {
+  ...crud("/api/v1/billing/payments/"),
+  reverse: (id) => apiRequest(`/api/v1/billing/payments/${id}/reverse/`, { method: "POST" }),
+};
+export const creditNotesAPI = {
+  ...crud("/api/v1/billing/credit-notes/"),
+  apply: (id) => apiRequest(`/api/v1/billing/credit-notes/${id}/apply/`, { method: "POST" }),
+};
+export const arSummariesAPI = {
+  ...crud("/api/v1/billing/ar-summaries/"),
+  byAgreement: (agreementId) =>
+    apiRequest(`/api/v1/billing/ar-summaries/by-agreement/${agreementId}/`),
+  refresh: (agreementId) =>
+    apiRequest(`/api/v1/billing/ar-summaries/refresh/${agreementId}/`, { method: "POST" }),
+  overall: () => apiRequest("/api/v1/billing/ar-summaries/overall/"),
+};
+export const arRulesAPI = {
+  ...crud("/api/v1/billing/ar-rules/"),
+  byAgreement: (agreementId) =>
+    apiRequest(`/api/v1/billing/ar-rules/by-agreement/${agreementId}/`),
+};
+export const leaseRulesAPI = {
+  get: (agreementId) =>
+    apiRequest(`/api/v1/billing/lease-rules/${agreementId}/rules/`),
+  update: (agreementId, payload) =>
+    apiRequest(`/api/v1/billing/lease-rules/${agreementId}/rules/`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+};
+export const ageingBucketsAPI = {
+  ...crud("/api/v1/billing/ageing-buckets/"),
+  initializeDefaults: () =>
+    apiRequest("/api/v1/billing/ageing-buckets/initialize-defaults/", { method: "POST" }),
+};
+export const ageingConfigAPI = crud("/api/v1/billing/ageing-config/");
+export const disputeRulesAPI = {
+  ...crud("/api/v1/billing/dispute-rules/"),
+  activate: (id) => apiRequest(`/api/v1/billing/dispute-rules/${id}/activate/`, { method: "POST" }),
+  deactivate: (id) => apiRequest(`/api/v1/billing/dispute-rules/${id}/deactivate/`, { method: "POST" }),
+  reorder: (order) =>
+    apiRequest("/api/v1/billing/dispute-rules/reorder/", {
+      method: "POST",
+      body: JSON.stringify({ order }),
+    }),
+};
+export const creditRulesAPI = {
+  ...crud("/api/v1/billing/credit-rules/"),
+  activate: (id) => apiRequest(`/api/v1/billing/credit-rules/${id}/activate/`, { method: "POST" }),
+  deactivate: (id) => apiRequest(`/api/v1/billing/credit-rules/${id}/deactivate/`, { method: "POST" }),
+};
+export const arGlobalSettingsAPI = {
+  list: () => apiRequest("/api/v1/billing/ar-global-settings/"),
+  create: (payload) =>
+    apiRequest("/api/v1/billing/ar-global-settings/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  update: (payload) =>
+    apiRequest("/api/v1/billing/ar-global-settings/update/", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+};
+export const billingConfigBundleAPI = () => apiRequest("/api/v1/billing/config/");
+export const siteBillingConfigBundleAPI = (siteId) =>
+  apiRequest(`/api/v1/billing/site/${siteId}/config/`);
+
+// ── Clauses API ────────────────────────────────────────────────────────────
+export const clauseCategoriesAPI = {
+  ...crud("/api/v1/clauses/categories/"),
+  tree: () => apiRequest("/api/v1/clauses/categories/tree/"),
+};
+export const clausesAPI = {
+  ...crud("/api/v1/clauses/clauses/"),
+  versions: (id) => apiRequest(`/api/v1/clauses/clauses/${id}/versions/`),
+  bump: (id, payload) =>
+    apiRequest(`/api/v1/clauses/clauses/${id}/bump/`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  duplicate: (id, payload) =>
+    apiRequest(`/api/v1/clauses/clauses/${id}/duplicate/`, {
+      method: "POST",
+      body: JSON.stringify(payload || {}),
+    }),
+};
+export const clauseVersionsAPI = crud("/api/v1/clauses/versions/");
+export const clauseDocumentsAPI = {
+  ...crud("/api/v1/clauses/documents/"),
+  upload: (formData) => {
+    const { accessToken } = getTokens();
+    const scopeId = getActiveScopeId();
+    const headers = {
+      ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+      ...(scopeId && { "X-Scope-ID": scopeId }),
+    };
+    return fetch(`${BASE_URL}/api/v1/clauses/documents/`, {
+      method: "POST",
+      headers,
+      body: formData,
+    }).then(async (r) => {
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(extractError(data, r.statusText));
+      return data;
+    });
+  },
+};
+export const clauseDocumentLinksAPI = crud("/api/v1/clauses/document-links/");
+export const clauseUsagesAPI = {
+  ...crud("/api/v1/clauses/usages/"),
+  byAgreement: (agreementId) =>
+    apiRequest(`/api/v1/clauses/usages/by-agreement/${agreementId}/`),
+  byClause: (clauseId) =>
+    apiRequest(`/api/v1/clauses/usages/by-clause/${clauseId}/`),
+};
+export const clauseStatsAPI = {
+  summary: () => apiRequest("/api/v1/clauses/stats/summary/"),
+  byCategory: () => apiRequest("/api/v1/clauses/stats/by-category/"),
+};
+
+// ── Leases API ─────────────────────────────────────────────────────────────
+const apiFormRequest = async (endpoint, method, formData) => {
+  const { accessToken } = getTokens();
+  const scopeId = getActiveScopeId();
+  const headers = {
+    ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+    ...(scopeId && { "X-Scope-ID": scopeId }),
+  };
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    method,
+    headers,
+    body: formData,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(extractError(data, response.statusText));
+  return data;
+};
+
+export const agreementsAPI = {
+  ...crud("/api/v1/leases/agreements/"),
+  terms: (id) => apiRequest(`/api/v1/leases/agreements/${id}/terms/`),
+  bundle: (id, payload) =>
+    apiRequest(`/api/v1/leases/agreements/${id}/bundle/`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  submit: (id) => apiRequest(`/api/v1/leases/agreements/${id}/submit/`, { method: "POST" }),
+  activate: (id) => apiRequest(`/api/v1/leases/agreements/${id}/activate/`, { method: "POST" }),
+  terminate: (id) => apiRequest(`/api/v1/leases/agreements/${id}/terminate/`, { method: "POST" }),
+  byTenant: (tenantId) => apiRequest(`/api/v1/leases/agreements/by-tenant/?tenant_id=${tenantId}`),
+};
+
+export const allocationsAPI = {
+  ...crud("/api/v1/leases/allocations/"),
+  byAgreement: (agreementId) => apiRequest(`/api/v1/leases/allocations/?agreement_id=${agreementId}`),
+};
+
+export const escalationTemplatesAPI = {
+  ...crud("/api/v1/leases/escalation-templates/"),
+  activate: (id) => apiRequest(`/api/v1/leases/escalation-templates/${id}/activate/`, { method: "POST" }),
+  archive: (id) => apiRequest(`/api/v1/leases/escalation-templates/${id}/archive/`, { method: "POST" }),
+  clone: (id) => apiRequest(`/api/v1/leases/escalation-templates/${id}/clone/`, { method: "POST" }),
+};
+
+export const leaseAvailabilityAPI = {
+  tree: (siteId) => apiRequest(`/api/v1/leases/availability/tree/?site_id=${siteId}`),
+};
+
+export const leaseDocumentsAPI = {
+  ...crud("/api/v1/leases/documents/"),
+  upload: (formData) => apiFormRequest("/api/v1/leases/documents/", "POST", formData),
+};
+
+export const leaseNotesAPI = {
+  ...crud("/api/v1/leases/notes/"),
+  byAgreement: (agreementId) => apiRequest(`/api/v1/leases/notes/?agreement_id=${agreementId}`),
+};
+
+export const leaseAmendmentsAPI = {
+  ...crud("/api/v1/leases/amendments/"),
+  submit: (id) => apiRequest(`/api/v1/leases/amendments/${id}/submit/`, { method: "POST" }),
+  approve: (id) => apiRequest(`/api/v1/leases/amendments/${id}/approve/`, { method: "POST" }),
+  reject: (id) => apiRequest(`/api/v1/leases/amendments/${id}/reject/`, { method: "POST" }),
+  execute: (id) => apiRequest(`/api/v1/leases/amendments/${id}/execute/`, { method: "POST" }),
+  byAgreement: (agreementId) => apiRequest(`/api/v1/leases/amendments/by-agreement/${agreementId}/`),
+};
+
+export const amendmentApprovalsAPI = {
+  ...crud("/api/v1/leases/amendment-approvals/"),
+  action: (id, payload) =>
+    apiRequest(`/api/v1/leases/amendment-approvals/${id}/action/`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+};
+
+export const amendmentAttachmentsAPI = {
+  ...crud("/api/v1/leases/amendment-attachments/"),
+  upload: (formData) => apiFormRequest("/api/v1/leases/amendment-attachments/", "POST", formData),
+};
+
+export const leaseLinkedDocumentsAPI = {
+  ...crud("/api/v1/leases/linked-documents/"),
+  expiring: () => apiRequest("/api/v1/leases/linked-documents/expiring/"),
+  expired: () => apiRequest("/api/v1/leases/linked-documents/expired/"),
+  byAgreement: (agreementId) => apiRequest(`/api/v1/leases/linked-documents/by-agreement/${agreementId}/`),
+  upload: (formData) => apiFormRequest("/api/v1/leases/linked-documents/", "POST", formData),
+};
+
+export const documentApprovalsAPI = {
+  ...crud("/api/v1/leases/document-approvals/"),
+  action: (id, payload) =>
+    apiRequest(`/api/v1/leases/document-approvals/${id}/action/`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+};
+
+export const leaseClauseConfigAPI = {
+  get: (agreementId) => apiRequest(`/api/v1/leases/clause-config/${agreementId}/config/`),
+  update: (agreementId, payload) =>
+    apiRequest(`/api/v1/leases/clause-config/${agreementId}/config/`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+};
+
+export default apiRequest;

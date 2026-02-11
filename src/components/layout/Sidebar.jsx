@@ -1,0 +1,143 @@
+import { useState } from "react";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Building2,
+  ShieldCheck,
+  Layers,
+  FileCheck,
+  Receipt,
+  BookOpen,
+  Users,
+  UserCog,
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Wand2,
+} from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
+
+const adminNav = [
+  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/admin/orgs", label: "Organizations", icon: Building2 },
+  { to: "/admin/companies", label: "Companies", icon: Layers },
+  { to: "/admin/entities", label: "Entities", icon: Layers },
+  { to: "/admin/scopes", label: "Scopes", icon: ShieldCheck },
+  { to: "/admin/users", label: "Users", icon: Users },
+  { to: "/admin/roles", label: "Roles", icon: UserCog },
+  { to: "/admin/memberships", label: "Memberships", icon: UserCog },
+];
+
+const tenantNav = [
+  { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/properties", label: "Properties", icon: Building2, match: (p) => p.startsWith("/properties") && !p.startsWith("/properties/setup") },
+  { to: "/properties/setup", label: "Setup Wizard", icon: Wand2 },
+  { to: "/tenants", label: "Tenant Setup", icon: Users },
+  { to: "/leases", label: "Lease Management", icon: FileCheck },
+  { to: "/billing", label: "Billing & AR", icon: Receipt },
+  { to: "/clauses", label: "Clause Library", icon: BookOpen },
+];
+
+export default function Sidebar() {
+  const [collapsed, setCollapsed] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isAdmin = user?.is_superuser === true;
+  const navItems = isAdmin ? adminNav : tenantNav;
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
+  return (
+    <aside
+      className={`min-h-screen bg-white border-r border-gray-200 flex flex-col shrink-0 transition-[width] duration-200 ease-in-out ${
+        collapsed ? "w-[4.5rem]" : "w-64"
+      }`}
+    >
+      {/* Brand */}
+      <div
+        className={`border-b border-gray-100 flex items-center gap-2 min-h-[4.5rem] ${
+          collapsed ? "flex-col justify-center p-2" : "justify-between p-3"
+        }`}
+      >
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+            <Building2 className="w-5 h-5 text-emerald-600" />
+          </div>
+          {!collapsed && (
+            <span className="font-semibold text-gray-800 text-lg truncate">PropFolio</span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => setCollapsed((c) => !c)}
+          className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors shrink-0 cursor-pointer"
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? (
+            <PanelLeftOpen className="w-5 h-5" />
+          ) : (
+            <PanelLeftClose className="w-5 h-5" />
+          )}
+        </button>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-3 overflow-y-auto">
+        <ul className="space-y-0.5">
+          {navItems.map(({ to, label, icon: Icon, end, match }) => {
+            const active = match ? match(location.pathname) : undefined;
+            return (
+              <li key={to}>
+                <NavLink
+                  to={to}
+                  end={end !== undefined ? end : to === "/"}
+                  title={collapsed ? label : undefined}
+                  className={({ isActive }) => {
+                    const highlighted = active !== undefined ? active : isActive;
+                    return `flex items-center gap-3 rounded-lg text-sm font-medium transition-colors ${
+                      collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
+                    } ${
+                      highlighted
+                        ? collapsed
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-emerald-50 text-emerald-700 border-l-2 border-emerald-500 -ml-[2px] pl-[14px]"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    }`;
+                  }}
+                >
+                  <Icon className="w-5 h-5 shrink-0" />
+                  {!collapsed && <span>{label}</span>}
+                </NavLink>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      {/* User / Logout */}
+      <div className={`p-3 border-t border-gray-100 mt-auto ${collapsed ? "flex flex-col items-center" : ""}`}>
+        {!collapsed && user?.email && (
+          <p className="text-xs text-gray-500 truncate px-2 mb-2 w-full" title={user.email}>
+            {user.email}
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={handleLogout}
+          title="Log out"
+          className={`flex items-center gap-3 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors cursor-pointer ${
+            collapsed ? "justify-center p-2 w-full" : "px-3 py-2 w-full"
+          }`}
+        >
+          <LogOut className="w-5 h-5 shrink-0" />
+          {!collapsed && <span>Log out</span>}
+        </button>
+      </div>
+    </aside>
+  );
+}
