@@ -23,12 +23,10 @@ const adminNav = [
   { to: "/admin/companies", label: "Companies", icon: Layers },
   { to: "/admin/entities", label: "Entities", icon: Layers },
   { to: "/admin/scopes", label: "Scopes", icon: ShieldCheck },
-  { to: "/admin/users", label: "Users", icon: Users },
-  { to: "/admin/roles", label: "Roles", icon: UserCog },
-  { to: "/admin/memberships", label: "Memberships", icon: UserCog },
+  { to: "/admin/users", label: "User Management", icon: Users, match: (p) => ["/admin/users", "/admin/roles", "/admin/permissions", "/admin/memberships"].some((base) => p === base || p.startsWith(base + "/")) },
 ];
 
-const tenantNav = [
+const tenantNavBase = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/properties", label: "Properties", icon: Building2, match: (p) => p.startsWith("/properties") && !p.startsWith("/properties/setup") },
   { to: "/properties/setup", label: "Setup Wizard", icon: Wand2 },
@@ -38,6 +36,9 @@ const tenantNav = [
   { to: "/clauses", label: "Clause Library", icon: BookOpen },
 ];
 
+const tenantNavOrgStructure = { to: "/org-structure/orgs", label: "Org Structure", icon: Layers, match: (p) => ["/org-structure"].some((base) => p === base || p.startsWith(base + "/")) };
+const tenantNavUserMgmt = { to: "/user-management/users", label: "User Management", icon: UserCog, match: (p) => ["/user-management"].some((base) => p === base || p.startsWith(base + "/")) };
+
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { user, logout } = useAuth();
@@ -45,6 +46,9 @@ export default function Sidebar() {
   const location = useLocation();
 
   const isAdmin = user?.is_superuser === true;
+  const { availableScopes } = useAuth();
+  const hasScopeAccess = (availableScopes?.length ?? 0) > 0;
+  const tenantNav = [...tenantNavBase, ...(hasScopeAccess ? [tenantNavOrgStructure, tenantNavUserMgmt] : [])];
   const navItems = isAdmin ? adminNav : tenantNav;
 
   const handleLogout = () => {

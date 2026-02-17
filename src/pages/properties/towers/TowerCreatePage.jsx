@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Building, Hash, Layers, Maximize2, LayoutGrid, Calendar } from "lucide-react";
-import { towersAPI } from "../../../services/api";
+import { towersAPI, sitesAPI } from "../../../services/api";
 import PageHeader from "../../../components/ui/PageHeader";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
@@ -20,22 +20,32 @@ const BUILDING_TYPES = [
 export default function TowerCreatePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const siteId = searchParams.get("site");
+  const preselectedSite = searchParams.get("site");
+  const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
+    site: preselectedSite || "",
     name: "", code: "", building_type: "COMMERCIAL",
     total_floors: "", total_area_sqft: "", leasable_area_sqft: "",
     completion_date: "", occupancy_date: "",
   });
 
+  useEffect(() => {
+    sitesAPI.list().then((r) => setSites(r?.results || r || [])).catch(() => setSites([]));
+  }, []);
+
+  const siteId = form.site || preselectedSite || (sites.length === 1 ? sites[0]?.id : null);
+  const siteOptions = sites.map((s) => ({ value: s.id, label: s.name ? `${s.name} (${s.code || s.id})` : `Site #${s.id}` }));
+
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!siteId) { toast.error("Site ID missing"); return; }
+    const sid = form.site || preselectedSite || (sites.length === 1 ? sites[0]?.id : null);
+    if (!sid) { toast.error("Please select a site"); return; }
     setLoading(true);
     try {
-      const payload = { ...form, site: siteId };
+      const payload = { ...form, site: sid };
       ["total_floors", "total_area_sqft", "leasable_area_sqft"].forEach((k) => {
         if (payload[k] === "") payload[k] = null;
       });
@@ -44,7 +54,7 @@ export default function TowerCreatePage() {
       });
       await towersAPI.create(payload);
       toast.success("Tower created");
-      navigate(`/properties/sites/${siteId}`);
+      navigate(`/properties/sites/${sid}`);
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -54,8 +64,20 @@ export default function TowerCreatePage() {
 
   return (
     <div>
-      <PageHeader title="Create Tower" backTo={`/properties/sites/${siteId}`} />
+      <PageHeader title="Create Tower" backTo={siteId ? `/properties/sites/${siteId}` : "/properties"} />
       <form onSubmit={handleSubmit} className="space-y-6">
+        {siteOptions.length > 0 && (
+          <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 rounded-r-lg bg-gray-50">
+            <Select
+              label="Site"
+              value={form.site || preselectedSite || ""}
+              onChange={set("site")}
+              options={siteOptions}
+              placeholder="Select site"
+              required
+            />
+          </div>
+        )}
         {/* Tower Details */}
         <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 rounded-r-lg">
           <div className="flex items-center gap-2 mb-4">
@@ -85,7 +107,7 @@ export default function TowerCreatePage() {
         </div>
 
         <div className="flex justify-end gap-2 pt-4">
-          <Button variant="secondary" type="button" onClick={() => navigate(`/properties/sites/${siteId}`)}>Cancel</Button>
+          <Button variant="secondary" type="button" onClick={() => navigate(siteId ? `/properties/sites/${siteId}` : "/properties")}>Cancel</Button>
           <Button type="submit" loading={loading}>Create Tower</Button>
         </div>
       </form>

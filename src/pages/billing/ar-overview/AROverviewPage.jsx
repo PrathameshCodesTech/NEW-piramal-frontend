@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { arSummariesAPI } from "../../../services/api";
+import PageHeader from "../../../components/ui/PageHeader";
 import Card from "../../../components/ui/Card";
 import EmptyState from "../../../components/ui/EmptyState";
 import { BarChart3 } from "lucide-react";
@@ -15,19 +17,29 @@ export default function AROverviewPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      <div>
+        <PageHeader title="AR Overview" />
+        <div className="flex justify-center py-12">
+          <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        </div>
       </div>
     );
   }
 
   if (!data) {
-    return <EmptyState icon={BarChart3} title="No AR data" description="Create invoices to see AR overview" />;
+    return (
+      <div>
+        <PageHeader title="AR Overview" />
+        <EmptyState icon={BarChart3} title="No AR data" description="Create invoices to see AR overview" />
+      </div>
+    );
   }
 
   return (
-    <Card className="p-6">
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+    <div>
+      <PageHeader title="AR Overview" />
+      <Card className="p-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
         <div className="p-4 bg-gray-50 rounded-lg">
           <p className="text-xs text-gray-500">Total Invoiced</p>
           <p className="text-lg font-semibold">{Number(data.total_invoiced || 0).toLocaleString()}</p>
@@ -52,7 +64,22 @@ export default function AROverviewPage() {
           <p className="text-xs text-gray-500">Disputed</p>
           <p className="text-lg font-semibold">{data.disputed_count || 0}</p>
         </div>
-      </div>
-    </Card>
+        </div>
+        {(data.overdue_count > 0 || data.disputed_count > 0) && (
+          <div className="mt-6 flex flex-wrap gap-3 text-sm">
+            {data.overdue_count > 0 && (
+              <Link to="/billing/invoices?overdue=true" className="text-amber-600 hover:underline">
+                View overdue invoices ({data.overdue_count})
+              </Link>
+            )}
+            {data.disputed_count > 0 && (
+              <Link to="/billing/invoices?status=DISPUTED" className="text-amber-600 hover:underline">
+                View disputed invoices ({data.disputed_count})
+              </Link>
+            )}
+          </div>
+        )}
+      </Card>
+    </div>
   );
 }

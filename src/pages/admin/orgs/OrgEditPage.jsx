@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { orgsAPI } from "../../../services/api";
+import { useOrgStructureBasePath } from "../../../contexts/OrgStructureContext";
 import PageHeader from "../../../components/ui/PageHeader";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
@@ -10,6 +11,7 @@ import Card from "../../../components/ui/Card";
 export default function OrgEditPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const basePath = useOrgStructureBasePath();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -37,7 +39,7 @@ export default function OrgEditPage() {
     try {
       await orgsAPI.update(id, form);
       toast.success("Organization updated");
-      navigate(`/admin/orgs/${id}`);
+      navigate(`${basePath}/orgs/${id}`);
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -49,7 +51,7 @@ export default function OrgEditPage() {
 
   return (
     <div>
-      <PageHeader title="Edit Organization" backTo={`/admin/orgs/${id}`} />
+      <PageHeader title="Edit Organization" backTo={`${basePath}/orgs/${id}`} />
       <Card className="p-6 max-w-2xl">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -63,7 +65,7 @@ export default function OrgEditPage() {
           </div>
           <Input label="Address" value={form.address} onChange={set("address")} />
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="secondary" type="button" onClick={() => navigate(`/admin/orgs/${id}`)}>Cancel</Button>
+            <Button variant="secondary" type="button" onClick={() => navigate(`${basePath}/orgs/${id}`)}>Cancel</Button>
             <Button type="submit" loading={saving}>Save Changes</Button>
           </div>
         </form>

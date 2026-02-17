@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Pencil, Trash2 } from "lucide-react";
 import { orgsAPI } from "../../../services/api";
+import { useOrgStructureBasePath } from "../../../contexts/OrgStructureContext";
+import { useAuth } from "../../../contexts/AuthContext";
 import PageHeader from "../../../components/ui/PageHeader";
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
@@ -12,6 +14,9 @@ import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 export default function OrgViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const basePath = useOrgStructureBasePath();
+  const { user } = useAuth();
+  const canEditOrg = user?.is_superuser && basePath === "/admin";
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -26,7 +31,7 @@ export default function OrgViewPage() {
     try {
       await orgsAPI.delete(id);
       toast.success("Organization deleted");
-      navigate("/admin/orgs");
+      navigate(`${basePath}/orgs`);
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -53,13 +58,13 @@ export default function OrgViewPage() {
       <PageHeader
         title={data.name}
         subtitle="Organization Details"
-        backTo="/admin/orgs"
-        actions={
+        backTo={`${basePath}/orgs`}
+        actions={canEditOrg ? (
           <div className="flex gap-2">
-            <Button variant="secondary" icon={Pencil} onClick={() => navigate(`/admin/orgs/${id}/edit`)}>Edit</Button>
+            <Button variant="secondary" icon={Pencil} onClick={() => navigate(`${basePath}/orgs/${id}/edit`)}>Edit</Button>
             <Button variant="danger" icon={Trash2} onClick={() => setShowDelete(true)}>Delete</Button>
           </div>
-        }
+        ) : null}
       />
       <Card className="p-6 max-w-2xl">
         <div className="flex items-center gap-2 mb-6">

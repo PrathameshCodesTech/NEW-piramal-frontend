@@ -44,6 +44,7 @@ export default function WizardFloorStep({ siteId: initialSiteId, onNext, onBack 
   const [modalSiteId, setModalSiteId] = useState("");
   const [modalTowers, setModalTowers] = useState([]);
   const [modalTowerId, setModalTowerId] = useState("");
+  const [modalTowerFloors, setModalTowerFloors] = useState([]);
   const [form, setForm] = useState(INITIAL_FORM);
 
   useEffect(() => {
@@ -71,8 +72,13 @@ export default function WizardFloorStep({ siteId: initialSiteId, onNext, onBack 
   // Modal cascade: when modal site changes, fetch towers for modal
   useEffect(() => {
     if (showModal && modalSiteId) fetchModalTowers();
-    else if (showModal) { setModalTowers([]); setModalTowerId(""); }
+    else if (showModal) { setModalTowers([]); setModalTowerId(""); setModalTowerFloors([]); }
   }, [modalSiteId, showModal]);
+
+  useEffect(() => {
+    if (showModal && modalTowerId) fetchModalTowerFloors();
+    else if (showModal) setModalTowerFloors([]);
+  }, [modalTowerId, showModal]);
 
   const fetchSites = async () => {
     setSitesLoading(true);
@@ -100,7 +106,12 @@ export default function WizardFloorStep({ siteId: initialSiteId, onNext, onBack 
       const res = await towersAPI.list({ site: selectedSiteId });
       const list = res?.results || res || [];
       setTowers(list);
-      if (list.length > 0) setSelectedTower(String(list[0].id));
+      if (list.length > 0) {
+        setSelectedTower(String(list[0].id));
+      } else {
+        setSelectedTower("");
+        setFloors([]);
+      }
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -131,6 +142,15 @@ export default function WizardFloorStep({ siteId: initialSiteId, onNext, onBack 
     }
   };
 
+  const fetchModalTowerFloors = async () => {
+    try {
+      const res = await floorsAPI.list({ tower: modalTowerId });
+      setModalTowerFloors(res?.results || res || []);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
   const openModal = async () => {
     setForm(INITIAL_FORM);
     try {
@@ -149,13 +169,37 @@ export default function WizardFloorStep({ siteId: initialSiteId, onNext, onBack 
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!modalTowerId) return;
+    const floorNumber = parseInt(form.number, 10);
+    if (Number.isNaN(floorNumber)) {
+      toast.error("Please enter a valid floor number.");
+      return;
+    }
+
     setSaving(true);
     try {
+      const existingRes = await floorsAPI.list({ tower: modalTowerId });
+      const existingFloors = existingRes?.results || existingRes || [];
+      const existingNumbers = new Set(
+        existingFloors
+          .map((f) => parseInt(f.number, 10))
+          .filter((n) => !Number.isNaN(n))
+      );
+      if (existingNumbers.has(floorNumber)) {
+        toast.error(`Floor number ${floorNumber} already exists for this tower.`);
+        return;
+      }
+
+      const selectedModalTower = modalTowers.find((t) => String(t.id) === String(modalTowerId));
+      const plannedCount = parseInt(selectedModalTower?.total_floors, 10);
+      if (!Number.isNaN(plannedCount) && plannedCount > 0 && floorNumber > plannedCount) {
+        toast("This floor number is above the planned tower floor count. Saving anyway.");
+      }
+
       const payload = {
         ...form,
         site: parseInt(modalSiteId, 10),
         tower: parseInt(modalTowerId, 10),
-        number: parseInt(form.number, 10),
+        number: floorNumber,
       };
       ["total_area_sqft", "leasable_area_sqft"].forEach((k) => {
         if (payload[k] === "") payload[k] = null;
@@ -217,6 +261,29 @@ export default function WizardFloorStep({ siteId: initialSiteId, onNext, onBack 
       ),
     },
   ];
+
+  const selectedTowerObj = towers.find((t) => String(t.id) === String(selectedTower));
+  const plannedFloors = parseInt(selectedTowerObj?.total_floors, 10);
+  const usedNumbers = [...new Set(
+    floors.map((f) => parseInt(f.number, 10)).filter((n) => !Number.isNaN(n))
+  )].sort((a, b) => a - b);
+  const remainingFloors = !Number.isNaN(plannedFloors) && plannedFloors > 0
+    ? plannedFloors - usedNumbers.length
+    : null;
+
+  const selectedModalTowerObj = modalTowers.find((t) => String(t.id) === String(modalTowerId));
+  const modalPlannedFloors = parseInt(selectedModalTowerObj?.total_floors, 10);
+  const modalUsedNumbers = [...new Set(
+    modalTowerFloors.map((f) => parseInt(f.number, 10)).filter((n) => !Number.isNaN(n))
+  )].sort((a, b) => a - b);
+  const formFloorNumber = parseInt(form.number, 10);
+  const formDuplicateFloor = !Number.isNaN(formFloorNumber) && modalUsedNumbers.includes(formFloorNumber);
+  const formExceedsPlanned = (
+    !Number.isNaN(formFloorNumber) &&
+    !Number.isNaN(modalPlannedFloors) &&
+    modalPlannedFloors > 0 &&
+    formFloorNumber > modalPlannedFloors
+  );
 
   if (sitesLoading || loading) {
     return (
@@ -293,6 +360,19 @@ export default function WizardFloorStep({ siteId: initialSiteId, onNext, onBack 
           </div>
         </div>
 
+        {selectedTowerObj && (
+          <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            <p>
+              Tower plan: {Number.isNaN(plannedFloors) || plannedFloors <= 0 ? "Not set" : `${plannedFloors} floors`} |
+              {" "}Created: {usedNumbers.length}
+              {remainingFloors !== null ? ` | Remaining: ${Math.max(remainingFloors, 0)}` : ""}
+            </p>
+            <p className="text-xs text-emerald-700 mt-1">
+              Numbering used: {usedNumbers.length ? usedNumbers.join(", ") : "none yet"}
+            </p>
+          </div>
+        )}
+
         {floorsLoading ? (
           <div className="flex justify-center py-6">
             <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
@@ -366,7 +446,24 @@ export default function WizardFloorStep({ siteId: initialSiteId, onNext, onBack 
               <h4 className="text-sm font-semibold text-gray-700">Floor Details</h4>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Input label="Floor Number" icon={Hash} type="number" value={form.number} onChange={set("number")} required />
+              <div>
+                <Input label="Floor Number" icon={Hash} type="number" value={form.number} onChange={set("number")} required />
+                <p className="text-xs text-gray-500 mt-1">
+                  {Number.isNaN(modalPlannedFloors) || modalPlannedFloors <= 0
+                    ? "Tip: Set planned floor count in tower details for guidance."
+                    : `This tower is planned for ${modalPlannedFloors} floors. Used: ${modalUsedNumbers.length}.`}
+                </p>
+                {formDuplicateFloor && (
+                  <p className="text-xs text-red-600 mt-1">
+                    Floor {formFloorNumber} already exists in this tower.
+                  </p>
+                )}
+                {!formDuplicateFloor && formExceedsPlanned && (
+                  <p className="text-xs text-amber-700 mt-1">
+                    This number is above planned count ({modalPlannedFloors}). You can still save.
+                  </p>
+                )}
+              </div>
               <Input label="Label" icon={LayoutList} value={form.label} onChange={set("label")} placeholder="e.g. Ground Floor" />
               <Select label="Status" value={form.status} onChange={set("status")} options={FLOOR_STATUSES} />
               <Input label="Total Area (sqft)" icon={Maximize2} type="number" step="0.01" value={form.total_area_sqft} onChange={set("total_area_sqft")} />

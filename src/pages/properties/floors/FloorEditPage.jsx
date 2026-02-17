@@ -70,7 +70,7 @@ export default function FloorEditPage() {
 
   return (
     <div>
-      <PageHeader title="Edit Floor" backTo={`/properties/sites/${siteId}`} />
+      <PageHeader title={`Edit Floor: ${form.label ? `Floor ${form.number} — ${form.label}` : `Floor ${form.number}`}`} backTo={`/properties/sites/${siteId}`} />
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Floor Info */}
         <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 rounded-r-lg">

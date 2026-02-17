@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { companiesAPI, orgsAPI } from "../../../services/api";
+import { useOrgStructureBasePath } from "../../../contexts/OrgStructureContext";
 import PageHeader from "../../../components/ui/PageHeader";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
@@ -10,6 +11,7 @@ import Card from "../../../components/ui/Card";
 
 export default function CompanyCreatePage() {
   const navigate = useNavigate();
+  const basePath = useOrgStructureBasePath();
   const [loading, setLoading] = useState(false);
   const [orgs, setOrgs] = useState([]);
   const [form, setForm] = useState({ org: "", name: "", legal_name: "", registration_number: "", tax_id: "", address: "", city: "", state: "", country: "" });
@@ -24,13 +26,13 @@ export default function CompanyCreatePage() {
     try {
       await companiesAPI.create(form);
       toast.success("Company created");
-      navigate("/admin/companies");
+      navigate(`${basePath}/companies`);
     } catch (err) { toast.error(err.message); } finally { setLoading(false); }
   };
 
   return (
     <div>
-      <PageHeader title="Create Company" backTo="/admin/companies" />
+      <PageHeader title="Create Company" backTo={`${basePath}/companies`} />
       <Card className="p-6 max-w-2xl">
         <form onSubmit={handleSubmit} className="space-y-4">
           <Select label="Organization" value={form.org} onChange={set("org")} required options={orgs.map((o) => ({ value: o.id, label: o.name }))} placeholder="Select organization" />
@@ -45,7 +47,7 @@ export default function CompanyCreatePage() {
           </div>
           <Input label="Address" value={form.address} onChange={set("address")} />
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="secondary" type="button" onClick={() => navigate("/admin/companies")}>Cancel</Button>
+            <Button variant="secondary" type="button" onClick={() => navigate(`${basePath}/companies`)}>Cancel</Button>
             <Button type="submit" loading={loading}>Create</Button>
           </div>
         </form>

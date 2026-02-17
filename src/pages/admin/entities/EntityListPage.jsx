@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, MapPin } from "lucide-react";
 import { entitiesAPI } from "../../../services/api";
+import { useOrgStructureBasePath } from "../../../contexts/OrgStructureContext";
 import PageHeader from "../../../components/ui/PageHeader";
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
@@ -11,6 +12,7 @@ import EmptyState from "../../../components/ui/EmptyState";
 
 export default function EntityListPage() {
   const navigate = useNavigate();
+  const basePath = useOrgStructureBasePath();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,12 +28,12 @@ export default function EntityListPage() {
 
   return (
     <div>
-      <PageHeader title="Entities" subtitle="Manage entities" backTo="/admin" actions={<Button icon={Plus} onClick={() => navigate("/admin/entities/create")}>Create Entity</Button>} />
+      <PageHeader title="Entities" subtitle={basePath === "/org-structure" ? "Entities in your scope" : "Manage entities"} backTo={basePath === "/org-structure" ? basePath : "/admin"} actions={<Button icon={Plus} onClick={() => navigate(`${basePath}/entities/create`)}>Create Entity</Button>} />
       <Card>
         {!loading && data.length === 0 ? (
-          <EmptyState icon={MapPin} title="No entities yet" actionLabel="Create Entity" onAction={() => navigate("/admin/entities/create")} />
+          <EmptyState icon={MapPin} title="No entities yet" actionLabel="Create Entity" onAction={() => navigate(`${basePath}/entities/create`)} />
         ) : (
-          <DataTable columns={columns} data={data} loading={loading} onRowClick={(row) => navigate(`/admin/entities/${row.id}`)} />
+          <DataTable columns={columns} data={data} loading={loading} onRowClick={(row) => navigate(`${basePath}/entities/${row.id}`)} />
         )}
       </Card>
     </div>

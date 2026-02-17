@@ -163,6 +163,8 @@ export const usersAPI = {
 export const rolesAPI = crud("/api/v1/accounts/roles/");
 export const permissionsAPI = crud("/api/v1/accounts/permissions/");
 export const membershipsAPI = crud("/api/v1/accounts/memberships/");
+export const rolePermissionsAPI = crud("/api/v1/accounts/role-permissions/");
+export const userProfilesAPI = crud("/api/v1/accounts/user-profiles/");
 export const orgTreeAPI = {
   list: () => apiRequest("/api/v1/accounts/org-tree/"),
   get: (orgId) => apiRequest(`/api/v1/accounts/org-tree/${orgId}/`),
@@ -242,6 +244,12 @@ export const paymentsAPI = {
 };
 export const creditNotesAPI = {
   ...crud("/api/v1/billing/credit-notes/"),
+  approve: (id) => apiRequest(`/api/v1/billing/credit-notes/${id}/approve/`, { method: "POST" }),
+  reject: (id, reason) =>
+    apiRequest(`/api/v1/billing/credit-notes/${id}/reject/`, {
+      method: "POST",
+      body: JSON.stringify({ reason: reason ?? "" }),
+    }),
   apply: (id) => apiRequest(`/api/v1/billing/credit-notes/${id}/apply/`, { method: "POST" }),
 };
 export const arSummariesAPI = {
@@ -378,6 +386,11 @@ const apiFormRequest = async (endpoint, method, formData) => {
 export const agreementsAPI = {
   ...crud("/api/v1/leases/agreements/"),
   terms: (id) => apiRequest(`/api/v1/leases/agreements/${id}/terms/`),
+  pricingPreview: (id, payload) =>
+    apiRequest(`/api/v1/leases/agreements/${id}/pricing-preview/`, {
+      method: "POST",
+      body: JSON.stringify(payload || {}),
+    }),
   bundle: (id, payload) =>
     apiRequest(`/api/v1/leases/agreements/${id}/bundle/`, {
       method: "PATCH",
@@ -462,6 +475,71 @@ export const leaseClauseConfigAPI = {
       method: "PATCH",
       body: JSON.stringify(payload),
     }),
+};
+
+// ── Dashboard API ──────────────────────────────────────────────────────────
+export const dashboardAPI = {
+  getDashboard: (params) => {
+    const qp = params
+      ? Object.entries(params).reduce((acc, [k, v]) => {
+          if (v !== undefined && v !== null && v !== "") acc[k] = v;
+          return acc;
+        }, {})
+      : {};
+    const qs = Object.keys(qp).length ? `?${new URLSearchParams(qp)}` : "";
+    return apiRequest(`/api/v1/reports/dashboard/${qs}`);
+  },
+  getKPIs: (params) => {
+    const qp = params
+      ? Object.entries(params).reduce((acc, [k, v]) => {
+          if (v !== undefined && v !== null && v !== "") acc[k] = v;
+          return acc;
+        }, {})
+      : {};
+    const qs = Object.keys(qp).length ? `?${new URLSearchParams(qp)}` : "";
+    return apiRequest(`/api/v1/reports/dashboard/kpis/${qs}`);
+  },
+  getCharts: (params) => {
+    const qp = params
+      ? Object.entries(params).reduce((acc, [k, v]) => {
+          if (v !== undefined && v !== null && v !== "") acc[k] = v;
+          return acc;
+        }, {})
+      : {};
+    const qs = Object.keys(qp).length ? `?${new URLSearchParams(qp)}` : "";
+    return apiRequest(`/api/v1/reports/dashboard/charts/${qs}`);
+  },
+  getTables: (params) => {
+    const qp = params
+      ? Object.entries(params).reduce((acc, [k, v]) => {
+          if (v !== undefined && v !== null && v !== "") acc[k] = v;
+          return acc;
+        }, {})
+      : {};
+    const qs = Object.keys(qp).length ? `?${new URLSearchParams(qp)}` : "";
+    return apiRequest(`/api/v1/reports/dashboard/tables/${qs}`);
+  },
+  getPortfolioMap: (params) => {
+    const qp = params
+      ? Object.entries(params).reduce((acc, [k, v]) => {
+          if (v !== undefined && v !== null && v !== "") acc[k] = v;
+          return acc;
+        }, {})
+      : {};
+    const qs = Object.keys(qp).length ? `?${new URLSearchParams(qp)}` : "";
+    return apiRequest(`/api/v1/reports/dashboard/portfolio_map/${qs}`);
+  },
+  getOccupancyTimeline: (params) => {
+    const qp = params
+      ? Object.entries(params).reduce((acc, [k, v]) => {
+          if (v !== undefined && v !== null && v !== "") acc[k] = v;
+          return acc;
+        }, {})
+      : {};
+    const qs = Object.keys(qp).length ? `?${new URLSearchParams(qp)}` : "";
+    return apiRequest(`/api/v1/reports/dashboard/occupancy_timeline/${qs}`);
+  },
+  getFilters: () => apiRequest("/api/v1/reports/dashboard/filters/"),
 };
 
 export default apiRequest;

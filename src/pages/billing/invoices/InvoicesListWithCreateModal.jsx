@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import InvoicesListPage from "./InvoicesListPage";
-import BillingPlaceholderPage from "../BillingPlaceholderPage";
+import InvoiceCreatePage from "./InvoiceCreatePage";
 import Modal from "../../../components/ui/Modal";
 
 export default function InvoicesListWithCreateModal() {
@@ -18,7 +18,7 @@ export default function InvoicesListWithCreateModal() {
           title="Create Invoice"
           size="lg"
         >
-          <BillingPlaceholderPage title="Create Invoice" backTo="/billing/invoices" inModal />
+          <InvoiceCreatePage inModal />
         </Modal>
       )}
     </>

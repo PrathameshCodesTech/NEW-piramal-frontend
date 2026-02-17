@@ -126,7 +126,14 @@ export default function WizardUnitStep({ siteId: initialSiteId, onNext, onBack }
       const res = await towersAPI.list({ site: selectedSiteId });
       const list = res?.results || res || [];
       setTowers(list);
-      if (list.length > 0) setSelectedTower(String(list[0].id));
+      if (list.length > 0) {
+        setSelectedTower(String(list[0].id));
+      } else {
+        setSelectedTower("");
+        setFloors([]);
+        setSelectedFloor("");
+        setUnits([]);
+      }
     } catch (err) {
       toast.error(err.message);
     } finally {

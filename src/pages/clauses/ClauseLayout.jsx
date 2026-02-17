@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { BookOpen, History, FileText, Link2, FolderOpen, ChevronDown, ChevronUp } from "lucide-react";
+import { BookOpen, History, FileText, Link2, FolderOpen, PanelTopClose, PanelTopOpen } from "lucide-react";
 import { useState, useEffect } from "react";
 import { clauseStatsAPI } from "../../services/api";
 
@@ -56,55 +56,60 @@ export default function ClauseLayout() {
       </div>
 
       {/* Main tabs */}
-      <div className="flex gap-1 mb-1 border-b border-gray-200">
-        <NavLink to="/clauses/clauses" className={({ isActive }) => "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors " + (activeTab === "clauses" ? "text-emerald-700 border-emerald-500" : "text-gray-500 border-transparent hover:text-gray-700")}>
+      <div className="flex items-center gap-1 border-b border-gray-200">
+        <NavLink to="/clauses/clauses" className={"flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors " + (activeTab === "clauses" ? "text-emerald-700 border-emerald-500" : "text-gray-500 border-transparent hover:text-gray-700")}>
           <BookOpen className="w-4 h-4 shrink-0" /> Legal and Operational
         </NavLink>
-        <NavLink to="/clauses/versions" className={({ isActive }) => "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors " + (activeTab === "versions" ? "text-emerald-700 border-emerald-500" : "text-gray-500 border-transparent hover:text-gray-700")}>
+        <NavLink to="/clauses/versions" className={"flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors " + (activeTab === "versions" ? "text-emerald-700 border-emerald-500" : "text-gray-500 border-transparent hover:text-gray-700")}>
           <History className="w-4 h-4 shrink-0" /> Versions
         </NavLink>
-        <NavLink to="/clauses/documents" className={({ isActive }) => "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors " + (activeTab === "documents" ? "text-emerald-700 border-emerald-500" : "text-gray-500 border-transparent hover:text-gray-700")}>
+        <NavLink to="/clauses/documents" className={"flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors " + (activeTab === "documents" ? "text-emerald-700 border-emerald-500" : "text-gray-500 border-transparent hover:text-gray-700")}>
           <FileText className="w-4 h-4 shrink-0" /> Documents
         </NavLink>
-        <NavLink to="/clauses/usages" className={({ isActive }) => "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors " + (activeTab === "usages" ? "text-emerald-700 border-emerald-500" : "text-gray-500 border-transparent hover:text-gray-700")}>
+        <NavLink to="/clauses/usages" className={"flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors " + (activeTab === "usages" ? "text-emerald-700 border-emerald-500" : "text-gray-500 border-transparent hover:text-gray-700")}>
           <Link2 className="w-4 h-4 shrink-0" /> Usages
         </NavLink>
+        <div className="flex-1" />
+        <button
+          type="button"
+          onClick={() => setSubNavOpen((prev) => !prev)}
+          className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors -mb-px ${
+            subNavOpen
+              ? "text-emerald-600 bg-emerald-50 hover:bg-emerald-100"
+              : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          }`}
+          title={subNavOpen ? "Hide sub-tabs" : "Show sub-tabs"}
+        >
+          {subNavOpen ? <PanelTopClose className="w-4 h-4" /> : <PanelTopOpen className="w-4 h-4" />}
+        </button>
       </div>
 
-      {/* Sub-tabs with collapse toggle - styled like main tabs with icons */}
-      {subNavOpen ? (
-        <div className="flex items-center gap-2 mb-6 border-b border-gray-200 pb-2">
-          <div className="flex gap-1 flex-1 min-w-0">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <NavLink key={item.to} to={item.to} end={item.to === "/clauses/clauses"} className={({ isActive }) => "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors shrink-0 " + (isActive ? "bg-emerald-50 text-emerald-700" : "text-gray-600 hover:bg-gray-50")}>
-                  <Icon className="w-4 h-4 shrink-0" /> {item.label}
-                </NavLink>
-              );
-            })}
-          </div>
-          <button
-            type="button"
-            onClick={() => setSubNavOpen(false)}
-            className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors shrink-0"
-            title="Hide sub-navigation"
-          >
-            <ChevronUp className="w-4 h-4" />
-          </button>
-        </div>
-      ) : (
-        <div className="flex items-center mb-4">
-          <button
-            type="button"
-            onClick={() => setSubNavOpen(true)}
-            className="flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 rounded transition-colors"
-            title="Show sub-navigation"
-          >
-            <ChevronDown className="w-4 h-4" /> Show sub-tabs
-          </button>
+      {/* Sub-tabs - identical underline style as parent tabs */}
+      {subNavOpen && (
+        <div className="flex flex-wrap gap-1 mb-6 border-b border-gray-200">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === "/clauses/clauses"}
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                    isActive
+                      ? "text-emerald-700 border-emerald-500"
+                      : "text-gray-500 border-transparent hover:text-gray-700"
+                  }`
+                }
+              >
+                <Icon className="w-4 h-4 shrink-0" /> {item.label}
+              </NavLink>
+            );
+          })}
         </div>
       )}
+
+      {!subNavOpen && <div className="mb-6" />}
 
       <Outlet />
     </div>

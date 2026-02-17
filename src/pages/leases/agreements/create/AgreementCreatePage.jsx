@@ -18,7 +18,16 @@ import Button from "../../../../components/ui/Button";
 import Card from "../../../../components/ui/Card";
 import AgreementTabsNav from "../view/AgreementTabsNav";
 import AgreementTabPager from "../view/AgreementTabPager";
-import { cleanObject, toNumberOrNull } from "../view/constants";
+import {
+  calculateBufferSummary,
+  calculateAnnualRentFromMonthly,
+  calculateMonthlyRentFromRateAndArea,
+  cleanObject,
+  deriveEscalationFormFromTemplate,
+  resolveBaseRentMonthly,
+  toNumberOrNull,
+} from "../view/constants";
+import TenantSetupTab from "../view/tabs/TenantSetupTab";
 import BasicPartiesTab from "../view/tabs/BasicPartiesTab";
 import PropertyAllocationTab from "../view/tabs/PropertyAllocationTab";
 import FinancialsTab from "../view/tabs/FinancialsTab";
@@ -49,6 +58,9 @@ const initialFinancialForm = {
   payment_due_date: "1ST_DAY_OF_MONTH",
   first_rent_due_date: "",
   currency: "INR",
+  rent_free_days: "",
+  extended_buffer_days: "",
+  extended_buffer_charge_percent: "50",
   escalation_template: "",
   escalation_type: "FIXED_PERCENT",
   escalation_value: "",
@@ -73,10 +85,11 @@ const initialFinancialForm = {
 };
 
 const initialAllocationForm = {
+  allocation_level: "UNIT",
+  floor: "",
   unit: "",
   allocation_mode: "FULL",
   allocated_area_sqft: "",
-  monthly_rent: "",
 };
 
 const initialDocForm = {
@@ -100,10 +113,12 @@ export default function AgreementCreatePage() {
 
   const [basicForm, setBasicForm] = useState(initialBasicForm);
   const [financialForm, setFinancialForm] = useState(initialFinancialForm);
+  const [serverBufferSummary, setServerBufferSummary] = useState(null);
 
   const [allocations, setAllocations] = useState([]);
   const [allocationsLoading, setAllocationsLoading] = useState(false);
   const [allocationForm, setAllocationForm] = useState(initialAllocationForm);
+  const [floorOptions, setFloorOptions] = useState([]);
   const [unitOptions, setUnitOptions] = useState([]);
 
   const [terminationForm, setTerminationForm] = useState({
@@ -152,11 +167,70 @@ export default function AgreementCreatePage() {
 
   useEffect(() => {
     if (!agreementId) return;
-    if (activeTab === 1) fetchAllocationsAndUnits();
-    if (activeTab === 3) fetchClauseConfig();
-    if (activeTab === 4) fetchNotes();
-    if (activeTab === 5) fetchDocuments();
+    if (activeTab === 2) fetchAllocationsAndUnits();
+    if (activeTab === 4) fetchClauseConfig();
+    if (activeTab === 5) fetchNotes();
+    if (activeTab === 6) fetchDocuments();
   }, [activeTab, agreementId, data?.site, basicForm.site]);
+
+  useEffect(() => {
+    setServerBufferSummary(null);
+  }, [agreementId]);
+
+  useEffect(() => {
+    if (!financialForm.escalation_template) return;
+    const selectedTemplate = templates.find(
+      (t) => String(t.id) === String(financialForm.escalation_template)
+    );
+    const derived = deriveEscalationFormFromTemplate(selectedTemplate);
+    if (!derived) return;
+    setFinancialForm((prev) => ({ ...prev, ...derived }));
+  }, [financialForm.escalation_template, templates]);
+
+  useEffect(() => {
+    if (activeTab !== 3 || !agreementId) return;
+    if (!financialForm.commencement_date) {
+      setServerBufferSummary(null);
+      return;
+    }
+
+    const payload = {
+      term_dates: cleanObject({
+        commencement_date: financialForm.commencement_date || null,
+        expiry_date: financialForm.expiry_date || null,
+      }),
+      financials: cleanObject({
+        base_rent_monthly: null,
+        rate_per_sqft_monthly: toNumberOrNull(financialForm.rate_per_sqft_monthly),
+      }),
+      rent_free: cleanObject({
+        rent_free_days: toNumberOrNull(financialForm.rent_free_days),
+        extended_buffer_days: toNumberOrNull(financialForm.extended_buffer_days),
+        extended_buffer_charge_percent: toNumberOrNull(financialForm.extended_buffer_charge_percent),
+      }),
+    };
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await agreementsAPI.pricingPreview(agreementId, payload);
+        setServerBufferSummary(res?.summary || null);
+      } catch {
+        setServerBufferSummary(null);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [
+    activeTab,
+    agreementId,
+    financialForm.commencement_date,
+    financialForm.expiry_date,
+    financialForm.rate_per_sqft_monthly,
+    financialForm.base_rent_monthly,
+    financialForm.rent_free_days,
+    financialForm.extended_buffer_days,
+    financialForm.extended_buffer_charge_percent,
+  ]);
 
   const hydrateForms = (agreement) => {
     setBasicForm({
@@ -181,6 +255,9 @@ export default function AgreementCreatePage() {
       payment_due_date: agreement.financials?.payment_due_date || "1ST_DAY_OF_MONTH",
       first_rent_due_date: agreement.financials?.first_rent_due_date || "",
       currency: agreement.financials?.currency || "INR",
+      rent_free_days: agreement.rent_free?.rent_free_days ?? "",
+      extended_buffer_days: agreement.rent_free?.extended_buffer_days ?? "",
+      extended_buffer_charge_percent: agreement.rent_free?.extended_buffer_charge_percent ?? 50,
       escalation_template: agreement.escalation?.template ? String(agreement.escalation.template) : "",
       escalation_type: agreement.escalation?.escalation_type || "FIXED_PERCENT",
       escalation_value: agreement.escalation?.escalation_value ?? "",
@@ -224,6 +301,7 @@ export default function AgreementCreatePage() {
     const selectedSite = data?.site || toNumberOrNull(basicForm.site);
     if (!selectedSite) {
       setAllocations([]);
+      setFloorOptions([]);
       setUnitOptions([]);
       return;
     }
@@ -236,21 +314,31 @@ export default function AgreementCreatePage() {
       ]);
       setAllocations(allocRes?.results || allocRes || []);
 
-      const flattened = [];
+      const flattenedFloors = [];
+      const flattenedUnits = [];
       (tree?.towers || []).forEach((tower) => {
         (tower.floors || []).forEach((floor) => {
+          flattenedFloors.push({
+            id: floor.id,
+            label: `${tower.name} / ${floor.label || floor.number}`,
+            available: floor.available_area_sqft,
+            blocked: !!floor.has_floor_allocation,
+          });
           (floor.units || []).forEach((unit) => {
-            flattened.push({
+            flattenedUnits.push({
               id: unit.id,
               label: `${tower.name} / ${floor.label || floor.number} / ${unit.unit_no}`,
               available: unit.available_area_sqft,
+              disabled: !!unit.blocked_by_floor_allocation,
             });
           });
         });
       });
-      setUnitOptions(flattened);
+      setFloorOptions(flattenedFloors);
+      setUnitOptions(flattenedUnits);
     } catch {
       setAllocations([]);
+      setFloorOptions([]);
       setUnitOptions([]);
     } finally {
       setAllocationsLoading(false);
@@ -307,10 +395,10 @@ export default function AgreementCreatePage() {
       toast.error("Save Basic & Parties first");
       return;
     }
-    setActiveTab((prev) => Math.min(prev + 1, 6));
+    setActiveTab((prev) => Math.min(prev + 1, 7));
   };
   const goToTab = (tabIndex) => {
-    if (tabIndex > 0 && !agreementId) {
+    if (tabIndex > 1 && !agreementId) {
       toast.error("Create agreement in Basic & Parties first");
       return;
     }
@@ -370,16 +458,23 @@ export default function AgreementCreatePage() {
           initial_term_months: toNumberOrNull(financialForm.initial_term_months),
         }),
         financials: cleanObject({
-          base_rent_monthly: toNumberOrNull(financialForm.base_rent_monthly),
+          base_rent_monthly: effectiveBaseRentMonthly,
           rate_per_sqft_monthly: toNumberOrNull(financialForm.rate_per_sqft_monthly),
-          annual_rent: toNumberOrNull(financialForm.annual_rent),
+          annual_rent: calculateAnnualRentFromMonthly(effectiveBaseRentMonthly),
           billing_frequency: financialForm.billing_frequency,
           payment_due_date: financialForm.payment_due_date,
           first_rent_due_date: financialForm.first_rent_due_date || null,
           currency: financialForm.currency || "INR",
         }),
+        rent_free: cleanObject({
+          rent_free_start_date: financialForm.commencement_date || null,
+          rent_free_days: toNumberOrNull(financialForm.rent_free_days),
+          extended_buffer_days: toNumberOrNull(financialForm.extended_buffer_days),
+          extended_buffer_charge_percent: toNumberOrNull(financialForm.extended_buffer_charge_percent),
+        }),
         escalation: cleanObject({
           template: financialForm.escalation_template ? parseInt(financialForm.escalation_template, 10) : null,
+          use_template_values: !!financialForm.escalation_template,
           escalation_type: financialForm.escalation_type,
           escalation_value: toNumberOrNull(financialForm.escalation_value),
           escalation_frequency_months: toNumberOrNull(financialForm.escalation_frequency_months) || 12,
@@ -425,13 +520,24 @@ export default function AgreementCreatePage() {
     if (!ensureAgreement()) return;
     setSavingAllocation(true);
     try {
-      await allocationsAPI.create({
+      const isFloor = allocationForm.allocation_level === "FLOOR";
+      const targetId = isFloor ? allocationForm.floor : allocationForm.unit;
+      if (!targetId) {
+        toast.error(`Please select a ${isFloor ? "floor" : "unit"}`);
+        setSavingAllocation(false);
+        return;
+      }
+
+      const payload = {
         agreement: parseInt(agreementId, 10),
-        unit: parseInt(allocationForm.unit, 10),
+        allocation_level: allocationForm.allocation_level,
         allocation_mode: allocationForm.allocation_mode,
         allocated_area_sqft: toNumberOrNull(allocationForm.allocated_area_sqft),
-        monthly_rent: toNumberOrNull(allocationForm.monthly_rent),
-      });
+      };
+      if (isFloor) payload.floor = parseInt(targetId, 10);
+      else payload.unit = parseInt(targetId, 10);
+
+      await allocationsAPI.create(payload);
       setAllocationForm(initialAllocationForm);
       toast.success("Allocation added");
       await fetchAllocationsAndUnits();
@@ -570,6 +676,37 @@ export default function AgreementCreatePage() {
   const siteOptions = sites.map((s) => ({ value: String(s.id), label: s.name || s.code || `Site ${s.id}` }));
   const contactOptions = contacts.map((c) => ({ value: String(c.id), label: c.name || c.email || `Contact ${c.id}` }));
   const templateOptions = templates.map((t) => ({ value: String(t.id), label: t.name }));
+  const totalAllocatedAreaFromData = toNumberOrNull(data?.total_allocated_area);
+  const totalAllocatedAreaFromAllocations = allocations.reduce(
+    (sum, alloc) => sum + (toNumberOrNull(alloc.allocated_area_sqft) || 0),
+    0
+  );
+  const totalAllocatedAreaSqft =
+    totalAllocatedAreaFromData !== null ? totalAllocatedAreaFromData : totalAllocatedAreaFromAllocations;
+  const effectiveBaseRentMonthly = resolveBaseRentMonthly(
+    financialForm.base_rent_monthly,
+    financialForm.rate_per_sqft_monthly,
+    totalAllocatedAreaSqft
+  );
+  const localBufferSummary = calculateBufferSummary({
+    commencementDate: financialForm.commencement_date,
+    expiryDate: financialForm.expiry_date,
+    monthlyBaseRent: effectiveBaseRentMonthly,
+    primaryBufferDays: financialForm.rent_free_days,
+    extendedBufferDays: financialForm.extended_buffer_days,
+    extendedBufferChargePercent: financialForm.extended_buffer_charge_percent,
+    allocatedAreaSqft: totalAllocatedAreaSqft,
+  });
+  const bufferSummary = serverBufferSummary || localBufferSummary;
+  const selectedSiteId = toNumberOrNull(data?.site ?? basicForm.site);
+  const selectedSite = sites.find((s) => Number(s.id) === selectedSiteId);
+  const explicitRate = toNumberOrNull(financialForm.rate_per_sqft_monthly);
+  const fallbackSiteRate = selectedSite ? toNumberOrNull(selectedSite.base_rate_sqft) : null;
+  const effectiveRatePerSqft = explicitRate !== null ? explicitRate : fallbackSiteRate;
+  const monthlyRentPreview = calculateMonthlyRentFromRateAndArea(
+    allocationForm.allocated_area_sqft,
+    effectiveRatePerSqft
+  );
 
   return (
     <div>
@@ -587,14 +724,14 @@ export default function AgreementCreatePage() {
       />
       <AgreementTabsNav activeTab={activeTab} onChange={goToTab} />
 
-      {activeTab > 0 && !agreementId ? (
+      {activeTab > 1 && !agreementId ? (
         <Card className="p-6 max-w-3xl">
           <p className="text-sm text-gray-700">
             Create the agreement first in <strong>Basic & Parties</strong>. This generates a draft and enables all
             remaining tabs with real API calls.
           </p>
           <div className="mt-4">
-            <Button type="button" variant="secondary" onClick={() => setActiveTab(0)}>
+            <Button type="button" variant="secondary" onClick={() => setActiveTab(1)}>
               Go to Basic & Parties
             </Button>
           </div>
@@ -602,6 +739,18 @@ export default function AgreementCreatePage() {
       ) : (
         <>
           {activeTab === 0 && (
+            <TenantSetupTab
+              tenantOptions={tenantOptions}
+              selectedTenant={basicForm.tenant}
+              onTenantSelect={(val) => setBasicForm((p) => ({ ...p, tenant: val, primary_contact: "" }))}
+              onTenantCreated={(newTenant) => {
+                setTenants((prev) => [...prev, newTenant]);
+                setBasicForm((p) => ({ ...p, tenant: String(newTenant.id), primary_contact: "" }));
+              }}
+            />
+          )}
+
+          {activeTab === 1 && (
             <BasicPartiesTab
               form={basicForm}
               setForm={setBasicForm}
@@ -613,11 +762,14 @@ export default function AgreementCreatePage() {
             />
           )}
 
-          {activeTab === 1 && (
+          {activeTab === 2 && (
             <PropertyAllocationTab
               allocationForm={allocationForm}
               setAllocationForm={setAllocationForm}
+              floorOptions={floorOptions}
               unitOptions={unitOptions}
+              monthlyRentPreview={monthlyRentPreview}
+              effectiveRatePerSqft={effectiveRatePerSqft}
               onCreate={handleCreateAllocation}
               savingAllocation={savingAllocation}
               allocations={allocations}
@@ -626,17 +778,20 @@ export default function AgreementCreatePage() {
             />
           )}
 
-          {activeTab === 2 && (
+          {activeTab === 3 && (
             <FinancialsTab
               form={financialForm}
               setForm={setFinancialForm}
               templateOptions={templateOptions}
+              effectiveBaseRentMonthly={effectiveBaseRentMonthly}
+              totalAllocatedAreaSqft={totalAllocatedAreaSqft}
+              bufferSummary={bufferSummary}
               onSubmit={handleSaveFinancials}
               saving={savingFinancials}
             />
           )}
 
-          {activeTab === 3 && (
+          {activeTab === 4 && (
             <ClauseConfigTab
               loading={clauseLoading}
               form={terminationForm}
@@ -647,7 +802,7 @@ export default function AgreementCreatePage() {
             />
           )}
 
-          {activeTab === 4 && (
+          {activeTab === 5 && (
             <NotesTab
               noteText={noteText}
               setNoteText={setNoteText}
@@ -659,7 +814,7 @@ export default function AgreementCreatePage() {
             />
           )}
 
-          {activeTab === 5 && (
+          {activeTab === 6 && (
             <DocumentsTab
               form={docForm}
               setForm={setDocForm}
@@ -671,7 +826,7 @@ export default function AgreementCreatePage() {
             />
           )}
 
-          {activeTab === 6 && (
+          {activeTab === 7 && (
             <ReviewActionsTab
               data={data || { status: "DRAFT", agreement_type: basicForm.agreement_type, version_number: 1 }}
               updatingStatus={updatingStatus}
@@ -686,10 +841,10 @@ export default function AgreementCreatePage() {
 
       <AgreementTabPager
         activeTab={activeTab}
-        totalTabs={7}
+        totalTabs={8}
         onBack={goBack}
         onNext={goNext}
-        disableNext={!agreementId}
+        disableNext={activeTab > 0 && !agreementId}
       />
 
       {loadingAgreement && (

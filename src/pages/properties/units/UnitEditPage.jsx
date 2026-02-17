@@ -78,7 +78,7 @@ export default function UnitEditPage() {
 
   return (
     <div>
-      <PageHeader title="Edit Unit" backTo={null} />
+      <PageHeader title={`Edit Unit: ${form.unit_no || ""}`} backTo={null} />
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Unit Info */}
         <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 rounded-r-lg">

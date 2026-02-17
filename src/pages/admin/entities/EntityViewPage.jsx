@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Pencil, Trash2 } from "lucide-react";
 import { entitiesAPI } from "../../../services/api";
+import { useOrgStructureBasePath } from "../../../contexts/OrgStructureContext";
 import PageHeader from "../../../components/ui/PageHeader";
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
@@ -12,6 +13,7 @@ import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 export default function EntityViewPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const basePath = useOrgStructureBasePath();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -21,7 +23,7 @@ export default function EntityViewPage() {
 
   const handleDelete = async () => {
     setDeleting(true);
-    try { await entitiesAPI.delete(id); toast.success("Entity deleted"); navigate("/admin/entities"); } catch (err) { toast.error(err.message); } finally { setDeleting(false); }
+    try { await entitiesAPI.delete(id); toast.success("Entity deleted"); navigate(`${basePath}/entities`); } catch (err) { toast.error(err.message); } finally { setDeleting(false); }
   };
 
   if (loading) return <div className="flex justify-center py-12"><div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>;
@@ -31,7 +33,7 @@ export default function EntityViewPage() {
 
   return (
     <div>
-      <PageHeader title={data.name} subtitle="Entity Details" backTo="/admin/entities" actions={<div className="flex gap-2"><Button variant="secondary" icon={Pencil} onClick={() => navigate(`/admin/entities/${id}/edit`)}>Edit</Button><Button variant="danger" icon={Trash2} onClick={() => setShowDelete(true)}>Delete</Button></div>} />
+      <PageHeader title={data.name} subtitle="Entity Details" backTo={`${basePath}/entities`} actions={<div className="flex gap-2"><Button variant="secondary" icon={Pencil} onClick={() => navigate(`${basePath}/entities/${id}/edit`)}>Edit</Button><Button variant="danger" icon={Trash2} onClick={() => setShowDelete(true)}>Delete</Button></div>} />
       <Card className="p-6 max-w-2xl">
         <div className="mb-6"><Badge color={data.is_active ? "emerald" : "red"}>{data.is_active ? "Active" : "Inactive"}</Badge></div>
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">

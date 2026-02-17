@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { orgsAPI } from "../../../services/api";
+import { useOrgStructureBasePath } from "../../../contexts/OrgStructureContext";
 import PageHeader from "../../../components/ui/PageHeader";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
@@ -9,6 +10,7 @@ import Card from "../../../components/ui/Card";
 
 export default function OrgCreatePage() {
   const navigate = useNavigate();
+  const basePath = useOrgStructureBasePath();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: "", legal_name: "", registration_number: "", tax_id: "",
@@ -23,7 +25,7 @@ export default function OrgCreatePage() {
     try {
       await orgsAPI.create(form);
       toast.success("Organization created");
-      navigate("/admin/orgs");
+      navigate(`${basePath}/orgs`);
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -33,7 +35,7 @@ export default function OrgCreatePage() {
 
   return (
     <div>
-      <PageHeader title="Create Organization" backTo="/admin/orgs" />
+      <PageHeader title="Create Organization" backTo={`${basePath}/orgs`} />
       <Card className="p-6 max-w-2xl">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -47,7 +49,7 @@ export default function OrgCreatePage() {
           </div>
           <Input label="Address" value={form.address} onChange={set("address")} />
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="secondary" type="button" onClick={() => navigate("/admin/orgs")}>Cancel</Button>
+            <Button variant="secondary" type="button" onClick={() => navigate(`${basePath}/orgs`)}>Cancel</Button>
             <Button type="submit" loading={loading}>Create</Button>
           </div>
         </form>

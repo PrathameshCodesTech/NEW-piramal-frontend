@@ -7,6 +7,7 @@ import WizardAmenityStep from "./WizardAmenityStep";
 import WizardTowerStep from "./WizardTowerStep";
 import WizardFloorStep from "./WizardFloorStep";
 import WizardUnitStep from "./WizardUnitStep";
+import WizardUnitAmenityStep from "./WizardUnitAmenityStep";
 import WizardAssetStep from "./WizardAssetStep";
 
 const STEPS = [
@@ -15,6 +16,7 @@ const STEPS = [
   { label: "Towers", subtitle: "Add towers" },
   { label: "Floors", subtitle: "Define floors" },
   { label: "Units", subtitle: "Add units" },
+  { label: "Unit Amenities", subtitle: "Assign unit amenities" },
   { label: "Assets", subtitle: "Assign assets" },
 ];
 
@@ -57,7 +59,8 @@ export default function PropertySetupWizard() {
         {activeStep === 2 && <WizardTowerStep siteId={siteId} onNext={goNext} onBack={goBack} />}
         {activeStep === 3 && <WizardFloorStep siteId={siteId} onNext={goNext} onBack={goBack} />}
         {activeStep === 4 && <WizardUnitStep siteId={siteId} onNext={goNext} onBack={goBack} />}
-        {activeStep === 5 && <WizardAssetStep siteId={siteId} onFinish={handleFinish} onBack={goBack} />}
+        {activeStep === 5 && <WizardUnitAmenityStep siteId={siteId} onNext={goNext} onBack={goBack} />}
+        {activeStep === 6 && <WizardAssetStep siteId={siteId} onFinish={handleFinish} onBack={goBack} />}
       </div>
     </div>
   );

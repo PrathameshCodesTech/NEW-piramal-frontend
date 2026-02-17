@@ -73,7 +73,7 @@ export default function TowerEditPage() {
 
   return (
     <div>
-      <PageHeader title="Edit Tower" backTo={`/properties/sites/${siteId}`} />
+      <PageHeader title={`Edit Tower: ${form.name || ""}`} backTo={`/properties/sites/${siteId}`} />
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Tower Details */}
         <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 rounded-r-lg">

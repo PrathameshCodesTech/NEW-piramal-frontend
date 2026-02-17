@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { Receipt, BarChart3, Settings, FileText, Calendar, CreditCard, FileMinus, AlertCircle, Gift, Clock, FileSignature, ChevronDown, ChevronUp } from "lucide-react";
+import { Receipt, BarChart3, Settings, FileText, Calendar, CreditCard, FileMinus, AlertCircle, Gift, Clock, FileSignature, PanelTopClose, PanelTopOpen } from "lucide-react";
 import { useState, useEffect } from "react";
 import { billingRulesAPI, invoicesAPI, paymentsAPI } from "../../services/api";
 
@@ -86,7 +86,7 @@ export default function BillingLayout() {
       </div>
 
       {/* Primary tabs */}
-      <div className="flex gap-1 mb-1 border-b border-gray-200">
+      <div className="flex items-center gap-1 border-b border-gray-200">
         <NavLink
           to="/billing/site-config"
           className={
@@ -113,51 +113,47 @@ export default function BillingLayout() {
           <BarChart3 className="w-4 h-4 shrink-0" />
           AR
         </NavLink>
+        <div className="flex-1" />
+        <button
+          type="button"
+          onClick={() => setSubNavOpen((prev) => !prev)}
+          className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors -mb-px ${
+            subNavOpen
+              ? "text-emerald-600 bg-emerald-50 hover:bg-emerald-100"
+              : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          }`}
+          title={subNavOpen ? "Hide sub-tabs" : "Show sub-tabs"}
+        >
+          {subNavOpen ? <PanelTopClose className="w-4 h-4" /> : <PanelTopOpen className="w-4 h-4" />}
+        </button>
       </div>
 
-      {/* Sub-tabs with icons and collapse toggle */}
-      {subNavOpen ? (
-        <div className="flex items-center gap-2 mb-6 border-b border-gray-200 pb-2">
-          <div className="flex flex-wrap gap-1 flex-1 min-w-0">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={false}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors shrink-0 ${
-                      isActive ? "bg-emerald-50 text-emerald-700" : "text-gray-600 hover:bg-gray-50"
-                    }`
-                  }
-                >
-                  <Icon className="w-4 h-4 shrink-0" /> {item.label}
-                </NavLink>
-              );
-            })}
-          </div>
-          <button
-            type="button"
-            onClick={() => setSubNavOpen(false)}
-            className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors shrink-0"
-            title="Hide sub-navigation"
-          >
-            <ChevronUp className="w-4 h-4" />
-          </button>
-        </div>
-      ) : (
-        <div className="flex items-center mb-4">
-          <button
-            type="button"
-            onClick={() => setSubNavOpen(true)}
-            className="flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 rounded transition-colors"
-            title="Show sub-navigation"
-          >
-            <ChevronDown className="w-4 h-4" /> Show sub-tabs
-          </button>
+      {/* Sub-tabs - identical underline style as parent tabs */}
+      {subNavOpen && (
+        <div className="flex flex-wrap gap-1 mb-6 border-b border-gray-200">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={false}
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                    isActive
+                      ? "text-emerald-700 border-emerald-500"
+                      : "text-gray-500 border-transparent hover:text-gray-700"
+                  }`
+                }
+              >
+                <Icon className="w-4 h-4 shrink-0" /> {item.label}
+              </NavLink>
+            );
+          })}
         </div>
       )}
+
+      {!subNavOpen && <div className="mb-6" />}
 
       <Outlet />
     </div>

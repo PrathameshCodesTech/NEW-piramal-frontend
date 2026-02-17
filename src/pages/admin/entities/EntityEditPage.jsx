@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { entitiesAPI, companiesAPI } from "../../../services/api";
+import { useOrgStructureBasePath } from "../../../contexts/OrgStructureContext";
 import PageHeader from "../../../components/ui/PageHeader";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
@@ -11,6 +12,7 @@ import Card from "../../../components/ui/Card";
 export default function EntityEditPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const basePath = useOrgStructureBasePath();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [companies, setCompanies] = useState([]);
@@ -29,14 +31,14 @@ export default function EntityEditPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    try { await entitiesAPI.update(id, form); toast.success("Entity updated"); navigate(`/admin/entities/${id}`); } catch (err) { toast.error(err.message); } finally { setSaving(false); }
+    try { await entitiesAPI.update(id, form); toast.success("Entity updated"); navigate(`${basePath}/entities/${id}`); } catch (err) { toast.error(err.message); } finally { setSaving(false); }
   };
 
   if (loading) return <div className="flex justify-center py-12"><div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>;
 
   return (
     <div>
-      <PageHeader title="Edit Entity" backTo={`/admin/entities/${id}`} />
+      <PageHeader title="Edit Entity" backTo={`${basePath}/entities/${id}`} />
       <Card className="p-6 max-w-2xl">
         <form onSubmit={handleSubmit} className="space-y-4">
           <Select label="Company" value={form.company} onChange={set("company")} required options={companies.map((c) => ({ value: c.id, label: c.name }))} />
@@ -51,7 +53,7 @@ export default function EntityEditPage() {
           </div>
           <Input label="Address" value={form.address} onChange={set("address")} />
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="secondary" type="button" onClick={() => navigate(`/admin/entities/${id}`)}>Cancel</Button>
+            <Button variant="secondary" type="button" onClick={() => navigate(`${basePath}/entities/${id}`)}>Cancel</Button>
             <Button type="submit" loading={saving}>Save Changes</Button>
           </div>
         </form>

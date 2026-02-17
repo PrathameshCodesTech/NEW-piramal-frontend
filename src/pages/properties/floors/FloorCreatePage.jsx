@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Layers, Hash, Tag, LayoutGrid, Maximize2, FileText } from "lucide-react";
-import { floorsAPI } from "../../../services/api";
+import { floorsAPI, towersAPI } from "../../../services/api";
 import PageHeader from "../../../components/ui/PageHeader";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
@@ -17,23 +17,47 @@ const FLOOR_STATUS = [
 export default function FloorCreatePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const siteId = searchParams.get("site");
-  const towerId = searchParams.get("tower");
+  const preselectedSite = searchParams.get("site");
+  const preselectedTower = searchParams.get("tower");
+  const [towers, setTowers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [resolvedSite, setResolvedSite] = useState(null);
   const [form, setForm] = useState({
+    tower: preselectedTower || "",
     number: "", label: "", status: "AVAILABLE",
     total_area_sqft: "", leasable_area_sqft: "", cam_area_sqft: "",
     floor_type: "", allowed_use: "", leasing_type: "", max_units_allowed: "",
   });
 
+  useEffect(() => {
+    if (preselectedSite) {
+      setResolvedSite(preselectedSite);
+      towersAPI.list({ site: preselectedSite }).then((r) => setTowers(r?.results || r || [])).catch(() => setTowers([]));
+    } else if (preselectedTower) {
+      towersAPI.get(preselectedTower).then((t) => {
+        setResolvedSite(t.site);
+        towersAPI.list({ site: t.site }).then((r) => setTowers(r?.results || r || [])).catch(() => setTowers([]));
+      }).catch(() => { setTowers([]); setResolvedSite(null); });
+    } else {
+      setTowers([]);
+      setResolvedSite(null);
+    }
+  }, [preselectedSite, preselectedTower]);
+
+  const siteId = preselectedSite || resolvedSite || null;
+  const towerId = form.tower || preselectedTower || (towers.length === 1 ? towers[0]?.id : null);
+  const towerOptions = towers.map((t) => ({ value: t.id, label: t.name ? `${t.name} (${t.code || t.id})` : `Tower #${t.id}` }));
+
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!towerId || !siteId) { toast.error("Tower/Site ID missing"); return; }
+    const tid = form.tower || preselectedTower || (towers.length === 1 ? towers[0]?.id : null);
+    const sid = siteId;
+    if (!tid || !sid) { toast.error("Please select a tower"); return; }
     setLoading(true);
     try {
-      const payload = { ...form, tower: towerId, site: siteId };
+      const payload = { ...form, tower: tid, site: sid };
       ["total_area_sqft", "leasable_area_sqft", "cam_area_sqft", "max_units_allowed"].forEach((k) => {
         if (payload[k] === "") payload[k] = null;
       });
@@ -41,7 +65,7 @@ export default function FloorCreatePage() {
       payload.number = parseInt(payload.number, 10);
       await floorsAPI.create(payload);
       toast.success("Floor created");
-      navigate(`/properties/sites/${siteId}`);
+      navigate(`/properties/sites/${sid}`);
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -51,8 +75,20 @@ export default function FloorCreatePage() {
 
   return (
     <div>
-      <PageHeader title="Create Floor" backTo={`/properties/sites/${siteId}`} />
+      <PageHeader title="Create Floor" backTo={siteId ? `/properties/sites/${siteId}` : "/properties"} />
       <form onSubmit={handleSubmit} className="space-y-6">
+        {towerOptions.length > 0 && (
+          <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 rounded-r-lg bg-gray-50">
+            <Select
+              label="Tower"
+              value={form.tower || preselectedTower || ""}
+              onChange={set("tower")}
+              options={towerOptions}
+              placeholder="Select tower"
+              required
+            />
+          </div>
+        )}
         {/* Floor Info */}
         <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 rounded-r-lg">
           <div className="flex items-center gap-2 mb-4">
@@ -84,7 +120,7 @@ export default function FloorCreatePage() {
         </div>
 
         <div className="flex justify-end gap-2 pt-4">
-          <Button variant="secondary" type="button" onClick={() => navigate(`/properties/sites/${siteId}`)}>Cancel</Button>
+          <Button variant="secondary" type="button" onClick={() => navigate(siteId ? `/properties/sites/${siteId}` : "/properties")}>Cancel</Button>
           <Button type="submit" loading={loading}>Create Floor</Button>
         </div>
       </form>

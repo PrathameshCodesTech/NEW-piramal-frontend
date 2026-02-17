@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { DoorOpen, Hash, Maximize2, LayoutGrid, IndianRupee, FileText } from "lucide-react";
-import { unitsAPI } from "../../../services/api";
+import { unitsAPI, floorsAPI } from "../../../services/api";
 import PageHeader from "../../../components/ui/PageHeader";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
@@ -24,9 +24,12 @@ const UNIT_STATUSES = [
 export default function UnitCreatePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const floorId = searchParams.get("floor");
+  const preselectedFloor = searchParams.get("floor");
+  const [floors, setFloors] = useState([]);
+  const [resolvedContext, setResolvedContext] = useState({ siteId: null, towerId: null });
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
+    floor: preselectedFloor || "",
     unit_no: "", unit_type: "COMMERCIAL", status: "AVAILABLE",
     builtup_area_sqft: "", leasable_area_sqft: "",
     base_rent_default: "", cam_default: "", security_deposit_default: "",
@@ -34,21 +37,37 @@ export default function UnitCreatePage() {
     is_divisible: false, min_divisible_area_sqft: "",
   });
 
+  useEffect(() => {
+    if (preselectedFloor) {
+      floorsAPI.get(preselectedFloor).then((f) => {
+        setResolvedContext({ siteId: f.site, towerId: f.tower });
+        floorsAPI.list({ tower: f.tower }).then((r) => setFloors(r?.results || r || [])).catch(() => setFloors([]));
+      }).catch(() => { setFloors([]); setResolvedContext({ siteId: null, towerId: null }); });
+    } else {
+      setFloors([]);
+      setResolvedContext({ siteId: null, towerId: null });
+    }
+  }, [preselectedFloor]);
+
+  const floorId = form.floor || preselectedFloor || (floors.length === 1 ? floors[0]?.id : null);
+  const floorOptions = floors.map((f) => ({ value: f.id, label: f.label ? `Floor ${f.number} — ${f.label}` : `Floor ${f.number}` }));
+
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
   const setBool = (field) => (e) => setForm({ ...form, [field]: e.target.checked });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!floorId) { toast.error("Floor ID missing"); return; }
+    const fid = form.floor || preselectedFloor || (floors.length === 1 ? floors[0]?.id : null);
+    if (!fid) { toast.error("Please select a floor"); return; }
     setLoading(true);
     try {
-      const payload = { ...form, floor: floorId };
+      const payload = { ...form, floor: fid };
       ["builtup_area_sqft", "leasable_area_sqft", "base_rent_default", "cam_default", "security_deposit_default", "min_divisible_area_sqft"].forEach((k) => {
         if (payload[k] === "") payload[k] = null;
       });
       await unitsAPI.create(payload);
       toast.success("Unit created");
-      navigate(-1);
+      navigate(resolvedContext.siteId ? `/properties/sites/${resolvedContext.siteId}` : -1);
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -58,8 +77,20 @@ export default function UnitCreatePage() {
 
   return (
     <div>
-      <PageHeader title="Create Unit" backTo={null} />
+      <PageHeader title="Create Unit" backTo={resolvedContext.siteId ? `/properties/sites/${resolvedContext.siteId}` : "/properties"} />
       <form onSubmit={handleSubmit} className="space-y-6">
+        {floorOptions.length > 0 && (
+          <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 rounded-r-lg bg-gray-50">
+            <Select
+              label="Floor"
+              value={form.floor || preselectedFloor || ""}
+              onChange={set("floor")}
+              options={floorOptions}
+              placeholder="Select floor"
+              required
+            />
+          </div>
+        )}
         {/* Unit Info */}
         <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 rounded-r-lg">
           <div className="flex items-center gap-2 mb-4">

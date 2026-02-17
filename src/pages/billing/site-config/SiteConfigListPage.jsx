@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings } from "lucide-react";
+import { Settings, Plus } from "lucide-react";
 import { sitesAPI, siteBillingConfigAPI } from "../../../services/api";
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
@@ -44,6 +44,11 @@ export default function SiteConfigListPage() {
 
   return (
     <div>
+      <div className="flex justify-end mb-4">
+        <Button icon={Plus} onClick={() => navigate("/billing/site-config/create")}>
+          Create Site Config
+        </Button>
+      </div>
       <Card>
         {!loading && sites.length === 0 ? (
           <EmptyState icon={Settings} title="No sites" description="Create sites in Properties first" />

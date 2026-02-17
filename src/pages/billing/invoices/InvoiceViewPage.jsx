@@ -68,9 +68,15 @@ export default function InvoiceViewPage() {
         actions={
           <div className="flex gap-2">
             {data.status === "DRAFT" && <Button size="sm" onClick={handleSend}>Send</Button>}
+            {data.status !== "PAID" && parseFloat(data.balance_due) > 0 && (
+              <>
+                <Button size="sm" onClick={() => navigate(`/billing/collections/payments/create?invoice=${id}`)}>Record Payment</Button>
+                <Button variant="secondary" size="sm" onClick={() => navigate(`/billing/collections/credit-notes/create?invoice=${id}`)}>Credit Note</Button>
+              </>
+            )}
             {!data.is_disputed && data.status !== "PAID" && <Button variant="secondary" size="sm" onClick={handleDispute}>Dispute</Button>}
             {data.is_disputed && <Button size="sm" onClick={handleResolveDispute}>Resolve Dispute</Button>}
-            <Button variant="secondary" onClick={() => navigate(`/billing/invoices/${id}/edit`)}>Edit</Button>
+            {data.status === "DRAFT" && <Button variant="secondary" onClick={() => navigate(`/billing/invoices/${id}/edit`)}>Edit</Button>}
           </div>
         }
       />
@@ -82,10 +88,18 @@ export default function InvoiceViewPage() {
         <dl className="grid grid-cols-2 gap-4 text-sm">
           <div><dt className="text-gray-500">Invoice #</dt><dd>{data.invoice_number}</dd></div>
           <div><dt className="text-gray-500">Type</dt><dd>{data.invoice_type}</dd></div>
-          <div><dt className="text-gray-500">Date</dt><dd>{data.invoice_date}</dd></div>
+          <div><dt className="text-gray-500">Agreement</dt><dd>{data.agreement_details?.lease_id ?? data.agreement ?? "—"}</dd></div>
+          <div><dt className="text-gray-500">Currency</dt><dd>{data.currency ?? "INR"}</dd></div>
+          <div><dt className="text-gray-500">Invoice Date</dt><dd>{data.invoice_date}</dd></div>
           <div><dt className="text-gray-500">Due Date</dt><dd>{data.due_date}</dd></div>
+          <div><dt className="text-gray-500">Period Start</dt><dd>{data.period_start ?? "—"}</dd></div>
+          <div><dt className="text-gray-500">Period End</dt><dd>{data.period_end ?? "—"}</dd></div>
+          <div><dt className="text-gray-500">Subtotal</dt><dd>{data.subtotal ?? "—"}</dd></div>
+          <div><dt className="text-gray-500">Tax</dt><dd>{data.tax_amount ?? "—"}</dd></div>
           <div><dt className="text-gray-500">Total</dt><dd>{data.total_amount}</dd></div>
+          <div><dt className="text-gray-500">Amount Paid</dt><dd>{data.amount_paid ?? "—"}</dd></div>
           <div><dt className="text-gray-500">Balance Due</dt><dd>{data.balance_due}</dd></div>
+          {data.notes && <div className="col-span-2"><dt className="text-gray-500">Notes</dt><dd>{data.notes}</dd></div>}
         </dl>
         {data.line_items?.length > 0 && (
           <div className="mt-6">

@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import PaymentsListPage from "./PaymentsListPage";
-import BillingPlaceholderPage from "../BillingPlaceholderPage";
+import PaymentCreatePage from "./PaymentCreatePage";
 import Modal from "../../../components/ui/Modal";
 
 export default function PaymentsListWithCreateModal() {
@@ -13,7 +13,7 @@ export default function PaymentsListWithCreateModal() {
       <PaymentsListPage />
       {isCreate && (
         <Modal open={true} onClose={() => navigate("/billing/collections/payments")} title="Record Payment" size="md">
-          <BillingPlaceholderPage title="Record Payment" backTo="/billing/collections/payments" inModal />
+          <PaymentCreatePage inModal />
         </Modal>
       )}
     </>

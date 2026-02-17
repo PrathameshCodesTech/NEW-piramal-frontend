@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import DisputeRulesListPage from "./DisputeRulesListPage";
-import BillingPlaceholderPage from "../BillingPlaceholderPage";
+import DisputeRuleCreatePage from "./DisputeRuleCreatePage";
 import Modal from "../../../components/ui/Modal";
 
 export default function DisputeRulesListWithCreateModal() {
@@ -18,7 +18,7 @@ export default function DisputeRulesListWithCreateModal() {
           title="Create Dispute Rule"
           size="md"
         >
-          <BillingPlaceholderPage title="Create Dispute Rule" backTo="/billing/dispute-rules" inModal />
+          <DisputeRuleCreatePage inModal />
         </Modal>
       )}
     </>

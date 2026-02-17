@@ -1,253 +1,292 @@
-import Card from "../../../../../components/ui/Card";
 import Button from "../../../../../components/ui/Button";
 import Input from "../../../../../components/ui/Input";
 import Select from "../../../../../components/ui/Select";
+import { Calendar, TrendingUp, Building2, Shield, Receipt } from "lucide-react";
 import {
   BILLING_FREQ_OPTIONS,
   CAM_BASIS_OPTIONS,
+  calculateAnnualRentFromMonthly,
   ESCALATION_TYPE_OPTIONS,
   INVOICE_RULE_OPTIONS,
   PAYMENT_DUE_OPTIONS,
 } from "../constants";
 
-export default function FinancialsTab({ form, setForm, templateOptions, onSubmit, saving }) {
+export default function FinancialsTab({
+  form,
+  setForm,
+  templateOptions,
+  effectiveBaseRentMonthly = null,
+  totalAllocatedAreaSqft = null,
+  bufferSummary = null,
+  onSubmit,
+  saving,
+}) {
+  const set = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }));
+  const toggle = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.checked }));
+  const displayedBaseRentMonthly = effectiveBaseRentMonthly ?? form.base_rent_monthly ?? "";
+  const annualRent = calculateAnnualRentFromMonthly(displayedBaseRentMonthly);
+  const isTemplateDrivenEscalation = !!form.escalation_template;
+
   return (
-    <Card className="p-6">
-      <form onSubmit={onSubmit} className="space-y-6">
-        <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Term & Rent</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <Input
-              label="Commencement Date"
-              type="date"
-              value={form.commencement_date}
-              onChange={(e) => setForm((p) => ({ ...p, commencement_date: e.target.value }))}
-            />
-            <Input
-              label="Expiry Date"
-              type="date"
-              value={form.expiry_date}
-              onChange={(e) => setForm((p) => ({ ...p, expiry_date: e.target.value }))}
-            />
-            <Input
-              label="Term (Months)"
-              type="number"
-              value={form.initial_term_months}
-              onChange={(e) => setForm((p) => ({ ...p, initial_term_months: e.target.value }))}
-            />
-            <Input
-              label="Base Rent Monthly"
-              type="number"
-              step="0.01"
-              value={form.base_rent_monthly}
-              onChange={(e) => setForm((p) => ({ ...p, base_rent_monthly: e.target.value }))}
-            />
-            <Input
-              label="Rate / Sqft"
-              type="number"
-              step="0.01"
-              value={form.rate_per_sqft_monthly}
-              onChange={(e) => setForm((p) => ({ ...p, rate_per_sqft_monthly: e.target.value }))}
-            />
-            <Input
-              label="Annual Rent"
-              type="number"
-              step="0.01"
-              value={form.annual_rent}
-              onChange={(e) => setForm((p) => ({ ...p, annual_rent: e.target.value }))}
-            />
-            <Select
-              label="Billing Frequency"
-              value={form.billing_frequency}
-              onChange={(e) => setForm((p) => ({ ...p, billing_frequency: e.target.value }))}
-              options={BILLING_FREQ_OPTIONS}
-            />
-            <Select
-              label="Payment Due"
-              value={form.payment_due_date}
-              onChange={(e) => setForm((p) => ({ ...p, payment_due_date: e.target.value }))}
-              options={PAYMENT_DUE_OPTIONS}
-            />
-            <Input
-              label="First Rent Due Date"
-              type="date"
-              value={form.first_rent_due_date}
-              onChange={(e) => setForm((p) => ({ ...p, first_rent_due_date: e.target.value }))}
-            />
-            <Input
-              label="Currency"
-              value={form.currency}
-              onChange={(e) => setForm((p) => ({ ...p, currency: e.target.value }))}
-            />
-          </div>
+    <form onSubmit={onSubmit} className="space-y-6">
+      {/* Term & Rent */}
+      <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 rounded-r-lg">
+        <div className="flex items-center gap-2 mb-4">
+          <Calendar className="w-4 h-4 text-emerald-600" />
+          <h4 className="text-sm font-semibold text-gray-700">Term & Rent</h4>
         </div>
-
-        <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Escalation</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <Select
-              label="Template"
-              value={form.escalation_template}
-              onChange={(e) => setForm((p) => ({ ...p, escalation_template: e.target.value }))}
-              options={templateOptions}
-            />
-            <Select
-              label="Escalation Type"
-              value={form.escalation_type}
-              onChange={(e) => setForm((p) => ({ ...p, escalation_type: e.target.value }))}
-              options={ESCALATION_TYPE_OPTIONS}
-            />
-            <Input
-              label="Escalation Value"
-              type="number"
-              step="0.01"
-              value={form.escalation_value}
-              onChange={(e) => setForm((p) => ({ ...p, escalation_value: e.target.value }))}
-            />
-            <Input
-              label="Frequency (Months)"
-              type="number"
-              value={form.escalation_frequency_months}
-              onChange={(e) => setForm((p) => ({ ...p, escalation_frequency_months: e.target.value }))}
-            />
-            <Input
-              label="First Escalation (Months)"
-              type="number"
-              value={form.first_escalation_months}
-              onChange={(e) => setForm((p) => ({ ...p, first_escalation_months: e.target.value }))}
-            />
-          </div>
-          <div className="flex gap-5 mt-2">
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={form.apply_to_cam}
-                onChange={(e) => setForm((p) => ({ ...p, apply_to_cam: e.target.checked }))}
-                className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-              />
-              Apply to CAM
-            </label>
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={form.apply_to_parking}
-                onChange={(e) => setForm((p) => ({ ...p, apply_to_parking: e.target.checked }))}
-                className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-              />
-              Apply to Parking
-            </label>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Input label="Commencement Date" type="date" value={form.commencement_date} onChange={set("commencement_date")} />
+          <Input label="Expiry Date" type="date" value={form.expiry_date} onChange={set("expiry_date")} />
+          <Input label="Term (Months)" type="number" value={form.initial_term_months} onChange={set("initial_term_months")} />
+          <Input
+            label="Base Rent Monthly (Auto)"
+            type="number"
+            step="0.01"
+            value={displayedBaseRentMonthly}
+            readOnly
+          />
+          <Input label="Rate / Sqft" type="number" step="0.01" value={form.rate_per_sqft_monthly} onChange={set("rate_per_sqft_monthly")} />
+          <Input
+            label="Annual Rent"
+            type="number"
+            step="0.01"
+            value={annualRent ?? ""}
+            readOnly
+          />
+          <Select label="Billing Frequency" value={form.billing_frequency} onChange={set("billing_frequency")} options={BILLING_FREQ_OPTIONS} />
+          <Select label="Payment Due" value={form.payment_due_date} onChange={set("payment_due_date")} options={PAYMENT_DUE_OPTIONS} />
+          <Input label="First Rent Due Date" type="date" value={form.first_rent_due_date} onChange={set("first_rent_due_date")} />
+          <Input label="Currency" value={form.currency} onChange={set("currency")} />
         </div>
+        <p className="text-xs text-gray-500 mt-2">
+          {effectiveBaseRentMonthly !== null
+            ? `Base Rent Monthly is auto-derived from Rate / Sqft x allocated area (${Number(totalAllocatedAreaSqft || 0).toLocaleString()} sqft). Annual Rent follows automatically.`
+            : "Set Rate / Sqft and allocation area to auto-calculate Base Rent Monthly and Annual Rent."}
+        </p>
+      </div>
 
-        <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">CAM, Deposit & Billing Rules</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <Select
-              label="CAM Basis"
-              value={form.cam_allocation_basis}
-              onChange={(e) => setForm((p) => ({ ...p, cam_allocation_basis: e.target.value }))}
-              options={CAM_BASIS_OPTIONS}
-            />
-            <Input
-              label="CAM / Sqft"
-              type="number"
-              step="0.01"
-              value={form.cam_per_sqft_monthly}
-              onChange={(e) => setForm((p) => ({ ...p, cam_per_sqft_monthly: e.target.value }))}
-            />
-            <Input
-              label="CAM Fixed Amount"
-              type="number"
-              step="0.01"
-              value={form.cam_fixed_amount_monthly}
-              onChange={(e) => setForm((p) => ({ ...p, cam_fixed_amount_monthly: e.target.value }))}
-            />
-            <Input
-              label="CAM %"
-              type="number"
-              step="0.01"
-              value={form.cam_percentage_value}
-              onChange={(e) => setForm((p) => ({ ...p, cam_percentage_value: e.target.value }))}
-            />
-            <Input
-              label="CAM Monthly Total"
-              type="number"
-              step="0.01"
-              value={form.cam_monthly_total}
-              onChange={(e) => setForm((p) => ({ ...p, cam_monthly_total: e.target.value }))}
-            />
-            <Input
-              label="Deposit Amount"
-              type="number"
-              step="0.01"
-              value={form.deposit_amount}
-              onChange={(e) => setForm((p) => ({ ...p, deposit_amount: e.target.value }))}
-            />
-            <Input
-              label="Deposit Months"
-              type="number"
-              value={form.deposit_months_equivalent}
-              onChange={(e) => setForm((p) => ({ ...p, deposit_months_equivalent: e.target.value }))}
-            />
-            <Select
-              label="Invoice Rule"
-              value={form.invoice_generate_rule}
-              onChange={(e) => setForm((p) => ({ ...p, invoice_generate_rule: e.target.value }))}
-              options={INVOICE_RULE_OPTIONS}
-            />
-            <Input
-              label="Grace Days"
-              type="number"
-              value={form.grace_days}
-              onChange={(e) => setForm((p) => ({ ...p, grace_days: e.target.value }))}
-            />
-            <Input
-              label="Late Fee Flat"
-              type="number"
-              step="0.01"
-              value={form.late_fee_flat}
-              onChange={(e) => setForm((p) => ({ ...p, late_fee_flat: e.target.value }))}
-            />
-            <Input
-              label="Late Fee %"
-              type="number"
-              step="0.01"
-              value={form.late_fee_percent}
-              onChange={(e) => setForm((p) => ({ ...p, late_fee_percent: e.target.value }))}
-            />
-            <Input
-              label="Interest Annual %"
-              type="number"
-              step="0.01"
-              value={form.interest_annual_percent}
-              onChange={(e) => setForm((p) => ({ ...p, interest_annual_percent: e.target.value }))}
-            />
-            <Input
-              label="GST Rate"
-              type="number"
-              step="0.01"
-              value={form.gst_rate}
-              onChange={(e) => setForm((p) => ({ ...p, gst_rate: e.target.value }))}
-            />
-          </div>
-          <label className="flex items-center gap-2 text-sm text-gray-700 mt-2">
+      {/* Buffer & Proration */}
+      <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 bg-gray-50 rounded-r-lg">
+        <h4 className="text-sm font-semibold text-gray-700 mb-4">Buffer & Proration (Calendar Day)</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Input
+            label="Primary Buffer Days"
+            type="number"
+            value={form.rent_free_days}
+            onChange={set("rent_free_days")}
+            min="0"
+          />
+          <Input
+            label="Extended Buffer Days"
+            type="number"
+            value={form.extended_buffer_days}
+            onChange={set("extended_buffer_days")}
+            min="0"
+          />
+          <Input
+            label="Extended Charge %"
+            type="number"
+            step="0.01"
+            value={form.extended_buffer_charge_percent}
+            onChange={set("extended_buffer_charge_percent")}
+            min="0"
+            max="100"
+          />
+          <Input
+            label="Daily Base (Commence Month)"
+            type="number"
+            step="0.01"
+            value={bufferSummary?.currentDailyBaseRent ?? ""}
+            readOnly
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+          <Input label="Primary Buffer Start" value={bufferSummary?.primaryBufferStartDate || ""} readOnly />
+          <Input label="Primary Buffer End" value={bufferSummary?.primaryBufferEndDate || ""} readOnly />
+          <Input label="Extended Buffer Start" value={bufferSummary?.extendedBufferStartDate || ""} readOnly />
+          <Input label="Extended Buffer End" value={bufferSummary?.extendedBufferEndDate || ""} readOnly />
+          <Input label="First Charge Date" value={bufferSummary?.firstChargeDate || ""} readOnly />
+          <Input label="Full Charge Date" value={bufferSummary?.fullChargeDate || ""} readOnly />
+          <Input
+            label="Annual Gross Rent"
+            type="number"
+            step="0.01"
+            value={bufferSummary?.annualGrossRent ?? ""}
+            readOnly
+          />
+          <Input
+            label="Annual Net Collectible"
+            type="number"
+            step="0.01"
+            value={bufferSummary?.annualNetCollectible ?? ""}
+            readOnly
+          />
+          <Input
+            label="Primary Buffer Concession"
+            type="number"
+            step="0.01"
+            value={bufferSummary?.annualPrimaryBufferConcession ?? ""}
+            readOnly
+          />
+          <Input
+            label="Extended Buffer Concession"
+            type="number"
+            step="0.01"
+            value={bufferSummary?.annualExtendedBufferConcession ?? ""}
+            readOnly
+          />
+          <Input
+            label="Effective Monthly Rent"
+            type="number"
+            step="0.01"
+            value={bufferSummary?.effectiveMonthlyRent ?? ""}
+            readOnly
+          />
+          <Input
+            label="Effective Rate / Sqft"
+            type="number"
+            step="0.01"
+            value={bufferSummary?.effectiveRatePerSqft ?? ""}
+            readOnly
+          />
+          <Input
+            label="First Invoice Amount"
+            type="number"
+            step="0.01"
+            value={bufferSummary?.firstInvoiceAmount ?? ""}
+            readOnly
+          />
+          <Input
+            label="Next Cycle Amount"
+            type="number"
+            step="0.01"
+            value={bufferSummary?.nextCycleAmount ?? ""}
+            readOnly
+          />
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          Proration uses actual calendar days in each month. Escalation remains on base rate per sqft.
+        </p>
+      </div>
+
+      {/* Escalation */}
+      <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 bg-gray-50 rounded-r-lg">
+        <div className="flex items-center gap-2 mb-4">
+          <TrendingUp className="w-4 h-4 text-emerald-600" />
+          <h4 className="text-sm font-semibold text-gray-700">Escalation</h4>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Select label="Template" value={form.escalation_template} onChange={set("escalation_template")} options={templateOptions} />
+          <Select
+            label="Escalation Type"
+            value={form.escalation_type}
+            onChange={set("escalation_type")}
+            options={ESCALATION_TYPE_OPTIONS}
+            disabled={isTemplateDrivenEscalation}
+          />
+          <Input
+            label="Escalation Value"
+            type="number"
+            step="0.01"
+            value={form.escalation_value}
+            onChange={set("escalation_value")}
+            readOnly={isTemplateDrivenEscalation}
+          />
+          <Input
+            label="Frequency (Months)"
+            type="number"
+            value={form.escalation_frequency_months}
+            onChange={set("escalation_frequency_months")}
+            readOnly={isTemplateDrivenEscalation}
+          />
+          <Input
+            label="First Escalation (Months)"
+            type="number"
+            value={form.first_escalation_months}
+            onChange={set("first_escalation_months")}
+            readOnly={isTemplateDrivenEscalation}
+          />
+        </div>
+        {isTemplateDrivenEscalation && (
+          <p className="text-xs text-gray-500 mt-2">Escalation values are auto-filled from the selected template.</p>
+        )}
+        <div className="flex gap-5 mt-3">
+          <label className="flex items-center gap-2 text-sm text-gray-700">
             <input
               type="checkbox"
-              checked={form.gst_applicable}
-              onChange={(e) => setForm((p) => ({ ...p, gst_applicable: e.target.checked }))}
+              checked={form.apply_to_cam}
+              onChange={toggle("apply_to_cam")}
               className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+              disabled={isTemplateDrivenEscalation}
             />
-            GST applicable
+            Apply to CAM
+          </label>
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={form.apply_to_parking}
+              onChange={toggle("apply_to_parking")}
+              className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+              disabled={isTemplateDrivenEscalation}
+            />
+            Apply to Parking
           </label>
         </div>
+      </div>
 
-        <div className="flex justify-end">
-          <Button type="submit" loading={saving}>
-            Save Financials
-          </Button>
+      {/* CAM Charges */}
+      <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 rounded-r-lg">
+        <div className="flex items-center gap-2 mb-4">
+          <Building2 className="w-4 h-4 text-emerald-600" />
+          <h4 className="text-sm font-semibold text-gray-700">CAM Charges</h4>
         </div>
-      </form>
-    </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Select label="CAM Basis" value={form.cam_allocation_basis} onChange={set("cam_allocation_basis")} options={CAM_BASIS_OPTIONS} />
+          <Input label="CAM / Sqft" type="number" step="0.01" value={form.cam_per_sqft_monthly} onChange={set("cam_per_sqft_monthly")} />
+          <Input label="CAM Fixed Amount" type="number" step="0.01" value={form.cam_fixed_amount_monthly} onChange={set("cam_fixed_amount_monthly")} />
+          <Input label="CAM %" type="number" step="0.01" value={form.cam_percentage_value} onChange={set("cam_percentage_value")} />
+          <Input label="CAM Monthly Total" type="number" step="0.01" value={form.cam_monthly_total} onChange={set("cam_monthly_total")} />
+        </div>
+      </div>
+
+      {/* Deposit */}
+      <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 bg-gray-50 rounded-r-lg">
+        <div className="flex items-center gap-2 mb-4">
+          <Shield className="w-4 h-4 text-emerald-600" />
+          <h4 className="text-sm font-semibold text-gray-700">Deposit</h4>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Input label="Deposit Amount" type="number" step="0.01" value={form.deposit_amount} onChange={set("deposit_amount")} />
+          <Input label="Deposit Months" type="number" value={form.deposit_months_equivalent} onChange={set("deposit_months_equivalent")} />
+        </div>
+      </div>
+
+      {/* Billing Rules & Taxes */}
+      <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 rounded-r-lg">
+        <div className="flex items-center gap-2 mb-4">
+          <Receipt className="w-4 h-4 text-emerald-600" />
+          <h4 className="text-sm font-semibold text-gray-700">Billing Rules & Taxes</h4>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Select label="Invoice Rule" value={form.invoice_generate_rule} onChange={set("invoice_generate_rule")} options={INVOICE_RULE_OPTIONS} />
+          <Input label="Grace Days" type="number" value={form.grace_days} onChange={set("grace_days")} />
+          <Input label="Late Fee Flat" type="number" step="0.01" value={form.late_fee_flat} onChange={set("late_fee_flat")} />
+          <Input label="Late Fee %" type="number" step="0.01" value={form.late_fee_percent} onChange={set("late_fee_percent")} />
+          <Input label="Interest Annual %" type="number" step="0.01" value={form.interest_annual_percent} onChange={set("interest_annual_percent")} />
+          <Input label="GST Rate" type="number" step="0.01" value={form.gst_rate} onChange={set("gst_rate")} />
+        </div>
+        <label className="flex items-center gap-2 text-sm text-gray-700 mt-3">
+          <input type="checkbox" checked={form.gst_applicable} onChange={toggle("gst_applicable")} className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" />
+          GST applicable
+        </label>
+      </div>
+
+      <div className="flex justify-end pt-2">
+        <Button type="submit" loading={saving}>
+          Save Financials
+        </Button>
+      </div>
+    </form>
   );
 }
-

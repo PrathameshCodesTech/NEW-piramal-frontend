@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import InvoiceSchedulesListPage from "./InvoiceSchedulesListPage";
-import BillingPlaceholderPage from "../BillingPlaceholderPage";
+import InvoiceScheduleCreatePage from "./InvoiceScheduleCreatePage";
 import Modal from "../../../components/ui/Modal";
 
 export default function InvoiceSchedulesListWithCreateModal() {
@@ -16,9 +16,9 @@ export default function InvoiceSchedulesListWithCreateModal() {
           open={true}
           onClose={() => navigate("/billing/schedules")}
           title="Create Invoice Schedule"
-          size="md"
+          size="lg"
         >
-          <BillingPlaceholderPage title="Create Invoice Schedule" backTo="/billing/schedules" inModal />
+          <InvoiceScheduleCreatePage inModal />
         </Modal>
       )}
     </>

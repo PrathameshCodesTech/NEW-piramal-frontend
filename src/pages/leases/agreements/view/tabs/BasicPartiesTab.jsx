@@ -1,4 +1,4 @@
-import Card from "../../../../../components/ui/Card";
+import { FileText, Users, Building2, StickyNote, Hash, Briefcase } from "lucide-react";
 import Button from "../../../../../components/ui/Button";
 import Input from "../../../../../components/ui/Input";
 import Select from "../../../../../components/ui/Select";
@@ -14,11 +14,17 @@ export default function BasicPartiesTab({
   saving,
 }) {
   return (
-    <Card className="p-6 max-w-4xl">
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <form onSubmit={onSubmit} className="space-y-6">
+      {/* Agreement Details */}
+      <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 rounded-r-lg">
+        <div className="flex items-center gap-2 mb-4">
+          <FileText className="w-4 h-4 text-emerald-600" />
+          <h4 className="text-sm font-semibold text-gray-700">Agreement Details</h4>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
           <Input
             label="Lease ID"
+            icon={Hash}
             value={form.lease_id}
             onChange={(e) => setForm((p) => ({ ...p, lease_id: e.target.value }))}
             required
@@ -29,6 +35,28 @@ export default function BasicPartiesTab({
             onChange={(e) => setForm((p) => ({ ...p, agreement_type: e.target.value }))}
             options={AGREEMENT_TYPE_OPTIONS}
           />
+          <Input
+            label="Reference Code"
+            icon={Briefcase}
+            value={form.ref_code}
+            onChange={(e) => setForm((p) => ({ ...p, ref_code: e.target.value }))}
+          />
+          <Input
+            label="Landlord Entity"
+            icon={Building2}
+            value={form.landlord_entity}
+            onChange={(e) => setForm((p) => ({ ...p, landlord_entity: e.target.value }))}
+          />
+        </div>
+      </div>
+
+      {/* Parties */}
+      <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 bg-gray-50 rounded-r-lg">
+        <div className="flex items-center gap-2 mb-4">
+          <Users className="w-4 h-4 text-emerald-600" />
+          <h4 className="text-sm font-semibold text-gray-700">Parties</h4>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
           <Select
             label="Tenant"
             value={form.tenant}
@@ -47,33 +75,29 @@ export default function BasicPartiesTab({
             onChange={(e) => setForm((p) => ({ ...p, site: e.target.value }))}
             options={siteOptions}
           />
-          <Input
-            label="Landlord Entity"
-            value={form.landlord_entity}
-            onChange={(e) => setForm((p) => ({ ...p, landlord_entity: e.target.value }))}
-          />
-          <Input
-            label="Reference Code"
-            value={form.ref_code}
-            onChange={(e) => setForm((p) => ({ ...p, ref_code: e.target.value }))}
-          />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-          <textarea
-            rows={4}
-            value={form.notes}
-            onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
-          />
+      </div>
+
+      {/* Notes */}
+      <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 rounded-r-lg">
+        <div className="flex items-center gap-2 mb-4">
+          <StickyNote className="w-4 h-4 text-emerald-600" />
+          <h4 className="text-sm font-semibold text-gray-700">Notes</h4>
         </div>
-        <div className="flex justify-end">
-          <Button type="submit" loading={saving}>
-            Save Basic & Parties
-          </Button>
-        </div>
-      </form>
-    </Card>
+        <textarea
+          rows={4}
+          value={form.notes}
+          onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+          placeholder="Add any additional notes about this agreement..."
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+        />
+      </div>
+
+      <div className="flex justify-end">
+        <Button type="submit" loading={saving}>
+          Save Basic & Parties
+        </Button>
+      </div>
+    </form>
   );
 }
-

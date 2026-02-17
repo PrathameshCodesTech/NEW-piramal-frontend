@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { Pencil } from "lucide-react";
 import { invoiceSchedulesAPI } from "../../../services/api";
 import PageHeader from "../../../components/ui/PageHeader";
 import Button from "../../../components/ui/Button";
@@ -46,13 +47,28 @@ export default function InvoiceScheduleViewPage() {
       <PageHeader
         title={data.schedule_name}
         backTo="/billing/schedules"
-        actions={<Button onClick={handleGenerate} loading={generating}>Generate Now</Button>}
+        actions={
+          <div className="flex gap-2">
+            <Button variant="secondary" icon={Pencil} onClick={() => navigate(`/billing/schedules/${id}/edit`)}>
+              Edit
+            </Button>
+            <Button onClick={handleGenerate} loading={generating}>Generate Now</Button>
+          </div>
+        }
       />
       <Card className="p-6 max-w-2xl">
         <dl className="grid grid-cols-2 gap-4 text-sm">
+          <div><dt className="text-gray-500">Agreement</dt><dd>{data.agreement_lease_id ?? data.agreement ?? "—"}</dd></div>
           <div><dt className="text-gray-500">Type</dt><dd>{data.invoice_type}</dd></div>
           <div><dt className="text-gray-500">Frequency</dt><dd>{data.frequency}</dd></div>
           <div><dt className="text-gray-500">Amount</dt><dd>{data.amount}</dd></div>
+          <div><dt className="text-gray-500">Tax Rate</dt><dd>{data.tax_rate != null ? `${data.tax_rate}%` : "—"}</dd></div>
+          <div><dt className="text-gray-500">Start Date</dt><dd>{data.start_date ?? "—"}</dd></div>
+          <div><dt className="text-gray-500">End Date</dt><dd>{data.end_date ?? "—"}</dd></div>
+          <div><dt className="text-gray-500">Day of Month</dt><dd>{data.day_of_month ?? "—"}</dd></div>
+          <div><dt className="text-gray-500">Generate Days Before</dt><dd>{data.generate_days_before ?? "—"}</dd></div>
+          <div><dt className="text-gray-500">Last Generated</dt><dd>{data.last_generated_date ?? "—"}</dd></div>
+          <div><dt className="text-gray-500">Next Scheduled</dt><dd>{data.next_scheduled_date ?? "—"}</dd></div>
           <div><dt className="text-gray-500">Active</dt><dd>{data.is_active ? "Yes" : "No"}</dd></div>
         </dl>
       </Card>

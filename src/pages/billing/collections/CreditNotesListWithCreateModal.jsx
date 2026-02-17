@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import CreditNotesListPage from "./CreditNotesListPage";
-import BillingPlaceholderPage from "../BillingPlaceholderPage";
+import CreditNoteCreatePage from "./CreditNoteCreatePage";
 import Modal from "../../../components/ui/Modal";
 
 export default function CreditNotesListWithCreateModal() {
@@ -13,7 +13,7 @@ export default function CreditNotesListWithCreateModal() {
       <CreditNotesListPage />
       {isCreate && (
         <Modal open={true} onClose={() => navigate("/billing/collections/credit-notes")} title="Create Credit Note" size="md">
-          <BillingPlaceholderPage title="Create Credit Note" backTo="/billing/collections/credit-notes" inModal />
+          <CreditNoteCreatePage inModal />
         </Modal>
       )}
     </>

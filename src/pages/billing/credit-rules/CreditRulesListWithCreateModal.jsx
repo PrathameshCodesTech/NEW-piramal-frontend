@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import CreditRulesListPage from "./CreditRulesListPage";
-import BillingPlaceholderPage from "../BillingPlaceholderPage";
+import CreditRuleCreatePage from "./CreditRuleCreatePage";
 import Modal from "../../../components/ui/Modal";
 
 export default function CreditRulesListWithCreateModal() {
@@ -18,7 +18,7 @@ export default function CreditRulesListWithCreateModal() {
           title="Create Credit Rule"
           size="md"
         >
-          <BillingPlaceholderPage title="Create Credit Rule" backTo="/billing/credit-rules" inModal />
+          <CreditRuleCreatePage inModal />
         </Modal>
       )}
     </>

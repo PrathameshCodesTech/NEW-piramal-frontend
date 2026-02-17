@@ -140,7 +140,16 @@ export default function WizardAssetStep({ siteId: initialSiteId, onFinish, onBac
       ]);
       const tList = towRes?.results || towRes || [];
       setTowers(tList);
-      if (tList.length > 0) setSelectedTower(String(tList[0].id));
+      if (tList.length > 0) {
+        setSelectedTower(String(tList[0].id));
+      } else {
+        setSelectedTower("");
+        setFloors([]);
+        setSelectedFloor("");
+        setUnits([]);
+        setSelectedUnit("");
+        setAssets([]);
+      }
       setCategories(catRes?.results || catRes || []);
     } catch (err) {
       toast.error(err.message);
