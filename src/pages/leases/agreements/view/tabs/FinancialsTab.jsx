@@ -68,106 +68,172 @@ export default function FinancialsTab({
 
       {/* Buffer & Proration */}
       <div className="border-l-2 border-emerald-500 pl-5 py-5 pr-5 bg-gray-50 rounded-r-lg">
-        <h4 className="text-sm font-semibold text-gray-700 mb-4">Buffer & Proration (Calendar Day)</h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Input
-            label="Primary Buffer Days"
-            type="number"
-            value={form.rent_free_days}
-            onChange={set("rent_free_days")}
-            min="0"
-          />
-          <Input
-            label="Extended Buffer Days"
-            type="number"
-            value={form.extended_buffer_days}
-            onChange={set("extended_buffer_days")}
-            min="0"
-          />
-          <Input
-            label="Extended Charge %"
-            type="number"
-            step="0.01"
-            value={form.extended_buffer_charge_percent}
-            onChange={set("extended_buffer_charge_percent")}
-            min="0"
-            max="100"
-          />
-          <Input
-            label="Daily Base (Commence Month)"
-            type="number"
-            step="0.01"
-            value={bufferSummary?.currentDailyBaseRent ?? ""}
-            readOnly
-          />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-          <Input label="Primary Buffer Start" value={bufferSummary?.primaryBufferStartDate || ""} readOnly />
-          <Input label="Primary Buffer End" value={bufferSummary?.primaryBufferEndDate || ""} readOnly />
-          <Input label="Extended Buffer Start" value={bufferSummary?.extendedBufferStartDate || ""} readOnly />
-          <Input label="Extended Buffer End" value={bufferSummary?.extendedBufferEndDate || ""} readOnly />
-          <Input label="First Charge Date" value={bufferSummary?.firstChargeDate || ""} readOnly />
-          <Input label="Full Charge Date" value={bufferSummary?.fullChargeDate || ""} readOnly />
-          <Input
-            label="Annual Gross Rent"
-            type="number"
-            step="0.01"
-            value={bufferSummary?.annualGrossRent ?? ""}
-            readOnly
-          />
-          <Input
-            label="Annual Net Collectible"
-            type="number"
-            step="0.01"
-            value={bufferSummary?.annualNetCollectible ?? ""}
-            readOnly
-          />
-          <Input
-            label="Primary Buffer Concession"
-            type="number"
-            step="0.01"
-            value={bufferSummary?.annualPrimaryBufferConcession ?? ""}
-            readOnly
-          />
-          <Input
-            label="Extended Buffer Concession"
-            type="number"
-            step="0.01"
-            value={bufferSummary?.annualExtendedBufferConcession ?? ""}
-            readOnly
-          />
-          <Input
-            label="Effective Monthly Rent"
-            type="number"
-            step="0.01"
-            value={bufferSummary?.effectiveMonthlyRent ?? ""}
-            readOnly
-          />
-          <Input
-            label="Effective Rate / Sqft"
-            type="number"
-            step="0.01"
-            value={bufferSummary?.effectiveRatePerSqft ?? ""}
-            readOnly
-          />
-          <Input
-            label="First Invoice Amount"
-            type="number"
-            step="0.01"
-            value={bufferSummary?.firstInvoiceAmount ?? ""}
-            readOnly
-          />
-          <Input
-            label="Next Cycle Amount"
-            type="number"
-            step="0.01"
-            value={bufferSummary?.nextCycleAmount ?? ""}
-            readOnly
-          />
-        </div>
-        <p className="text-xs text-gray-500 mt-2">
-          Proration uses actual calendar days in each month. Escalation remains on base rate per sqft.
+        <h4 className="text-sm font-semibold text-gray-700 mb-1">Buffer & Proration (Calendar Day)</h4>
+        <p className="text-xs text-gray-500 mb-4">
+          Rent-free / reduced-rent period at lease start. Primary buffer = 0% charge; extended buffer = partial charge. Proration uses actual days per month.
         </p>
+
+        {/* Inputs */}
+        <div className="mb-6">
+          <h5 className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-3">Buffer Settings</h5>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Input
+              label="Primary Buffer Days (0% rent)"
+              type="number"
+              value={form.rent_free_days}
+              onChange={set("rent_free_days")}
+              min="0"
+              placeholder="e.g. 75"
+            />
+            <Input
+              label="Extended Buffer Days (partial %)"
+              type="number"
+              value={form.extended_buffer_days}
+              onChange={set("extended_buffer_days")}
+              min="0"
+            />
+            <Input
+              label="Extended Buffer Charge %"
+              type="number"
+              step="0.01"
+              value={form.extended_buffer_charge_percent}
+              onChange={set("extended_buffer_charge_percent")}
+              min="0"
+              max="100"
+              placeholder="50"
+            />
+          </div>
+        </div>
+
+        {/* Buffer Period Dates */}
+        <div className="mb-6">
+          <h5 className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-3">Buffer Period Dates</h5>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Input label="Primary Buffer Start" value={bufferSummary?.primaryBufferStartDate || ""} readOnly />
+            <Input label="Primary Buffer End" value={bufferSummary?.primaryBufferEndDate || ""} readOnly />
+            <Input label="Extended Buffer Start" value={bufferSummary?.extendedBufferStartDate || ""} readOnly />
+            <Input label="Extended Buffer End" value={bufferSummary?.extendedBufferEndDate || ""} readOnly />
+            <Input label="First Charge Date" value={bufferSummary?.firstChargeDate || ""} readOnly />
+            <Input label="Full Charge Date" value={bufferSummary?.fullChargeDate || ""} readOnly />
+          </div>
+        </div>
+
+        {/* First Year Calculation Summary - Crystal Clear */}
+        <div className="mb-6 p-4 bg-white border border-emerald-200 rounded-lg">
+          <h5 className="text-xs font-medium text-emerald-700 uppercase tracking-wide mb-3">First Year Calculation Summary</h5>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Input
+                label="Monthly Rent (Gross)"
+                type="number"
+                step="0.01"
+                value={displayedBaseRentMonthly ?? ""}
+                readOnly
+              />
+              <Input
+                label="Per-Day Rent (Commence Month)"
+                type="number"
+                step="0.01"
+                value={bufferSummary?.currentDailyBaseRent ?? ""}
+                readOnly
+              />
+              <Input
+                label="Annual Gross Rent (Year 1)"
+                type="number"
+                step="0.01"
+                value={bufferSummary?.annualGrossRent ?? ""}
+                readOnly
+              />
+              <Input
+                label="Primary Buffer Concession"
+                type="number"
+                step="0.01"
+                value={bufferSummary?.annualPrimaryBufferConcession ?? ""}
+                readOnly
+              />
+              <Input
+                label="Extended Buffer Concession"
+                type="number"
+                step="0.01"
+                value={bufferSummary?.annualExtendedBufferConcession ?? ""}
+                readOnly
+              />
+              <Input
+                label="Total Buffer Concession (Year 1)"
+                type="number"
+                step="0.01"
+                value={
+                  bufferSummary?.annualPrimaryBufferConcession != null && bufferSummary?.annualExtendedBufferConcession != null
+                    ? (
+                        Number(bufferSummary.annualPrimaryBufferConcession || 0) +
+                        Number(bufferSummary.annualExtendedBufferConcession || 0)
+                      ).toFixed(2)
+                    : ""
+                }
+                readOnly
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2 py-2 px-3 bg-emerald-50 rounded border border-emerald-100">
+              <span className="text-sm font-medium text-gray-700">First Year Net =</span>
+              <span className="text-sm text-gray-600">Annual Gross − Total Buffer Concession</span>
+              <span className="text-sm text-gray-400">=</span>
+              <span className="text-sm font-semibold text-emerald-700">
+                {bufferSummary?.annualGrossRent != null &&
+                (bufferSummary?.annualPrimaryBufferConcession != null || bufferSummary?.annualExtendedBufferConcession != null)
+                  ? (
+                      Number(bufferSummary.annualGrossRent || 0) -
+                      (Number(bufferSummary.annualPrimaryBufferConcession || 0) +
+                        Number(bufferSummary.annualExtendedBufferConcession || 0))
+                    ).toLocaleString("en-IN", { minimumFractionDigits: 2 })
+                  : "—"}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2 border-t border-gray-100">
+              <Input
+                label="First Year Net Collectible"
+                type="number"
+                step="0.01"
+                value={bufferSummary?.annualNetCollectible ?? ""}
+                readOnly
+              />
+              <Input
+                label="Effective Monthly Rent (Year 1)"
+                type="number"
+                step="0.01"
+                value={bufferSummary?.effectiveMonthlyRent ?? ""}
+                readOnly
+              />
+              <Input
+                label="Effective Rate / Sqft (Year 1)"
+                type="number"
+                step="0.01"
+                value={bufferSummary?.effectiveRatePerSqft ?? ""}
+                readOnly
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Invoice Amounts */}
+        <div>
+          <h5 className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-3">Invoice Amounts</h5>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="First Invoice Amount"
+              type="number"
+              step="0.01"
+              value={bufferSummary?.firstInvoiceAmount ?? ""}
+              readOnly
+            />
+            <Input
+              label="Next Cycle Amount"
+              type="number"
+              step="0.01"
+              value={bufferSummary?.nextCycleAmount ?? ""}
+              readOnly
+            />
+          </div>
+        </div>
       </div>
 
       {/* Escalation */}
