@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useParams } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import MainLayout from "./components/layout/MainLayout";
 import LoginPage from "./pages/auth/LoginPage";
@@ -93,8 +93,6 @@ import InvoiceSchedulesListWithCreateModal from "./pages/billing/schedules/Invoi
 import InvoiceScheduleEditPage from "./pages/billing/schedules/InvoiceScheduleEditPage";
 import InvoiceScheduleViewPage from "./pages/billing/schedules/InvoiceScheduleViewPage";
 import InvoicesListWithCreateModal from "./pages/billing/invoices/InvoicesListWithCreateModal";
-import InvoiceEditPage from "./pages/billing/invoices/InvoiceEditPage";
-import InvoiceViewPage from "./pages/billing/invoices/InvoiceViewPage";
 import PaymentsListWithCreateModal from "./pages/billing/collections/PaymentsListWithCreateModal";
 import PaymentViewPage from "./pages/billing/collections/PaymentViewPage";
 import CreditNotesListWithCreateModal from "./pages/billing/collections/CreditNotesListWithCreateModal";
@@ -110,6 +108,27 @@ import AgeingSetupPage from "./pages/billing/ageing/AgeingSetupPage";
 import ARSettingsPage from "./pages/billing/ar-settings/ARSettingsPage";
 import LeaseARRulesPage from "./pages/billing/lease-rules/LeaseARRulesPage";
 import LeaseARRulesEditPage from "./pages/billing/lease-rules/LeaseARRulesEditPage";
+
+// Rent Schedule & Revenue Recognition
+import RentScheduleRevenueLayout from "./pages/rent-schedule-revenue/RentScheduleRevenueLayout";
+import RentSchedulesPage from "./pages/rent-schedule-revenue/RentSchedulesPage";
+import RentScheduleDetailPage from "./pages/rent-schedule-revenue/RentScheduleDetailPage";
+import InvoicePage from "./pages/rent-schedule-revenue/InvoicePage";
+import InvoiceCreatePage from "./pages/rent-schedule-revenue/InvoiceCreatePage";
+import InvoiceViewPage from "./pages/rent-schedule-revenue/InvoiceViewPage";
+import InvoiceEditPage from "./pages/rent-schedule-revenue/InvoiceEditPage";
+import ReceivablesPage from "./pages/rent-schedule-revenue/ReceivablesPage";
+import RevenueRecognitionPage from "./pages/rent-schedule-revenue/RevenueRecognitionPage";
+
+function BillingInvoiceRedirect({ edit }) {
+  const { id } = useParams();
+  const to = edit ? `/rent-schedule-revenue/invoice/${id}/edit` : `/rent-schedule-revenue/invoice/${id}`;
+  return <Navigate to={to} replace />;
+}
+
+// Approvals pages
+import ApprovalsLayout from "./pages/approvals/ApprovalsLayout";
+import ApprovalRulesPage from "./pages/approvals/ApprovalRulesPage";
 
 // Dashboard
 import DashboardPage from "./pages/dashboard/DashboardPage";
@@ -188,6 +207,19 @@ export default function App() {
           <Route path="documents/:id" element={<LeaseDocumentViewPage />} />
         </Route>
 
+        {/* Rent Schedule & Revenue Recognition */}
+        <Route path="rent-schedule-revenue" element={<RentScheduleRevenueLayout />}>
+          <Route index element={<Navigate to="/rent-schedule-revenue/rent-schedules" replace />} />
+          <Route path="rent-schedules" element={<RentSchedulesPage />} />
+          <Route path="rent-schedules/:id" element={<RentScheduleDetailPage />} />
+          <Route path="invoice" element={<InvoicePage />} />
+          <Route path="invoice/create" element={<InvoiceCreatePage />} />
+          <Route path="invoice/:id" element={<InvoiceViewPage />} />
+          <Route path="invoice/:id/edit" element={<InvoiceEditPage />} />
+          <Route path="receivables" element={<ReceivablesPage />} />
+          <Route path="revenue-recognition" element={<RevenueRecognitionPage />} />
+        </Route>
+
         {/* Billing routes */}
         <Route path="billing" element={<BillingLayout />}>
           <Route index element={<Navigate to="/billing/site-config" replace />} />
@@ -203,10 +235,10 @@ export default function App() {
           <Route path="schedules/create" element={<InvoiceSchedulesListWithCreateModal />} />
           <Route path="schedules/:id/edit" element={<InvoiceScheduleEditPage />} />
           <Route path="schedules/:id" element={<InvoiceScheduleViewPage />} />
-          <Route path="invoices" element={<InvoicesListWithCreateModal />} />
-          <Route path="invoices/create" element={<InvoicesListWithCreateModal />} />
-          <Route path="invoices/:id/edit" element={<InvoiceEditPage />} />
-          <Route path="invoices/:id" element={<InvoiceViewPage />} />
+          <Route path="invoices" element={<Navigate to="/rent-schedule-revenue/invoice" replace />} />
+          <Route path="invoices/create" element={<Navigate to="/rent-schedule-revenue/invoice/create" replace />} />
+          <Route path="invoices/:id/edit" element={<BillingInvoiceRedirect edit />} />
+          <Route path="invoices/:id" element={<BillingInvoiceRedirect />} />
           <Route path="ar-overview" element={<AROverviewPage />} />
           <Route path="collections/payments" element={<PaymentsListWithCreateModal />} />
           <Route path="collections/payments/create" element={<PaymentsListWithCreateModal />} />
@@ -300,6 +332,12 @@ export default function App() {
           <Route path="entities/create" element={<EntityCreatePage />} />
           <Route path="entities/:id" element={<EntityViewPage />} />
           <Route path="entities/:id/edit" element={<EntityEditPage />} />
+        </Route>
+
+        {/* Approval routes */}
+        <Route path="approvals" element={<ApprovalsLayout />}>
+          <Route index element={<Navigate to="/approvals/rules" replace />} />
+          <Route path="rules" element={<ApprovalRulesPage />} />
         </Route>
 
         {/* Scope User Management - same UI, scope-filtered (org/company/entity admin) */}

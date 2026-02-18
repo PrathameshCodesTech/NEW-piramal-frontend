@@ -14,6 +14,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Wand2,
+  CalendarRange,
+  GitMerge,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -33,7 +35,9 @@ const tenantNavBase = [
   { to: "/tenants", label: "Tenant Setup", icon: Users },
   { to: "/leases", label: "Lease Management", icon: FileCheck },
   { to: "/billing", label: "Billing & AR", icon: Receipt },
+  { to: "/rent-schedule-revenue", label: "Rent Schedule & Revenue Recognition", icon: CalendarRange, match: (p) => p.startsWith("/rent-schedule-revenue") },
   { to: "/clauses", label: "Clause Library", icon: BookOpen },
+  { to: "/approvals/rules", label: "Approval Matrices", icon: GitMerge, match: (p) => p.startsWith("/approvals") },
 ];
 
 const tenantNavOrgStructure = { to: "/org-structure/orgs", label: "Org Structure", icon: Layers, match: (p) => ["/org-structure"].some((base) => p === base || p.startsWith(base + "/")) };

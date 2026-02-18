@@ -7,7 +7,6 @@ const BILLING_NAV = [
   { to: "/billing/site-config", label: "Site Config", icon: Settings },
   { to: "/billing/rules", label: "Billing Rules", icon: FileText },
   { to: "/billing/schedules", label: "Invoice Schedules", icon: Calendar },
-  { to: "/billing/invoices", label: "Invoices", icon: Receipt },
 ];
 
 const AR_NAV = [
@@ -25,8 +24,7 @@ function isBillingRoute(path) {
   return (
     path.startsWith("/billing/site-config") ||
     path.startsWith("/billing/rules") ||
-    path.startsWith("/billing/schedules") ||
-    path.startsWith("/billing/invoices")
+    path.startsWith("/billing/schedules")
   );
 }
 

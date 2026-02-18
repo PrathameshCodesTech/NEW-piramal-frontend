@@ -159,8 +159,34 @@ export const usersAPI = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  inviteUser: (payload) =>
+    apiRequest("/api/v1/accounts/users/invite_user/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  resetPassword: (id) =>
+    apiRequest(`/api/v1/accounts/users/${id}/reset_password/`, { method: "POST" }),
+  revokeInvitation: (id) =>
+    apiRequest(`/api/v1/accounts/users/${id}/revoke_invitation/`, { method: "POST" }),
+  setStatus: (id, status) =>
+    apiRequest(`/api/v1/accounts/users/${id}/set_status/`, {
+      method: "POST",
+      body: JSON.stringify({ status }),
+    }),
+  changeLog: (id) => apiRequest(`/api/v1/accounts/users/${id}/change_log/`),
+  bulkAction: (payload) =>
+    apiRequest("/api/v1/accounts/users/bulk_action/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };
-export const rolesAPI = crud("/api/v1/accounts/roles/");
+export const rolesAPI = {
+  ...crud("/api/v1/accounts/roles/"),
+  publish: (id) =>
+    apiRequest(`/api/v1/accounts/roles/${id}/publish/`, { method: "POST" }),
+  duplicate: (id) =>
+    apiRequest(`/api/v1/accounts/roles/${id}/duplicate/`, { method: "POST" }),
+};
 export const permissionsAPI = crud("/api/v1/accounts/permissions/");
 export const membershipsAPI = crud("/api/v1/accounts/memberships/");
 export const rolePermissionsAPI = crud("/api/v1/accounts/role-permissions/");
@@ -237,6 +263,60 @@ export const invoicesAPI = {
     apiRequest(`/api/v1/billing/invoices/${id}/resolve-dispute/`, { method: "POST" }),
   overdue: () => apiRequest("/api/v1/billing/invoices/overdue/"),
   summary: () => apiRequest("/api/v1/billing/invoices/summary/"),
+  bulkEmail: (invoiceIds) =>
+    apiRequest("/api/v1/billing/invoices/bulk_email/", {
+      method: "POST",
+      body: JSON.stringify({ invoice_ids: invoiceIds }),
+    }),
+  export: (params) => {
+    const qp = params ? Object.entries(params).reduce((acc, [k, v]) => {
+      if (v !== undefined && v !== null && v !== "") acc[k] = v;
+      return acc;
+    }, {}) : {};
+    const qs = Object.keys(qp).length ? `?${new URLSearchParams(qp)}` : "";
+    return fetch(`${BASE_URL}/api/v1/billing/invoices/export/${qs}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+    }).then((r) => r.blob());
+  },
+};
+
+export const invoiceAttachmentsAPI = {
+  list: (params) => {
+    const qp = params
+      ? Object.entries(params).reduce((acc, [k, v]) => {
+          if (v !== undefined && v !== null && v !== "") acc[k] = v;
+          return acc;
+        }, {})
+      : {};
+    const qs = Object.keys(qp).length ? `?${new URLSearchParams(qp)}` : "";
+    return apiRequest(`/api/v1/billing/invoice-attachments/${qs}`);
+  },
+  create: (invoiceId, file) => {
+    const form = new FormData();
+    form.append("invoice", invoiceId);
+    form.append("file", file);
+    const scopeId = getActiveScopeId();
+    return fetch(`${BASE_URL}/api/v1/billing/invoice-attachments/`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        ...(scopeId && { "X-Scope-ID": scopeId }),
+      },
+      body: form,
+    }).then((r) => {
+      if (!r.ok) return r.json().then((d) => Promise.reject(new Error(d.error || d.detail || "Upload failed")));
+      return r.json();
+    });
+  },
+  download: (id) => {
+    const scopeId = getActiveScopeId();
+    return fetch(`${BASE_URL}/api/v1/billing/invoice-attachments/${id}/download/`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        ...(scopeId && { "X-Scope-ID": scopeId }),
+      },
+    });
+  },
 };
 export const paymentsAPI = {
   ...crud("/api/v1/billing/payments/"),
@@ -259,6 +339,79 @@ export const arSummariesAPI = {
   refresh: (agreementId) =>
     apiRequest(`/api/v1/billing/ar-summaries/refresh/${agreementId}/`, { method: "POST" }),
   overall: () => apiRequest("/api/v1/billing/ar-summaries/overall/"),
+};
+export const rentSchedulesAPI = {
+  ...crud("/api/v1/billing/rent-schedule-lines/"),
+  generate: (payload) =>
+    apiRequest("/api/v1/billing/rent-schedule-lines/generate/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  markInvoiced: (payload) =>
+    apiRequest("/api/v1/billing/rent-schedule-lines/mark-invoiced/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  adjustAmounts: (payload) =>
+    apiRequest("/api/v1/billing/rent-schedule-lines/adjust-amounts/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  export: (params) => {
+    const qp = params ? Object.entries(params).reduce((acc, [k, v]) => {
+      if (v !== undefined && v !== null && v !== "") acc[k] = v;
+      return acc;
+    }, {}) : {};
+    const qs = Object.keys(qp).length ? `?${new URLSearchParams(qp)}` : "";
+    return fetch(`${BASE_URL}/api/v1/billing/rent-schedule-lines/export/${qs}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        ...(getActiveScopeId() && { "X-Scope-ID": getActiveScopeId() }),
+      },
+    }).then((r) => r.blob());
+  },
+  kpis: () => apiRequest("/api/v1/billing/rent-schedule-kpis/"),
+};
+export const receivablesAPI = {
+  list: (params) => {
+    const qp = params
+      ? Object.entries(params).reduce((acc, [k, v]) => {
+          if (v !== undefined && v !== null && v !== "") acc[k] = v;
+          return acc;
+        }, {})
+      : {};
+    const qs = Object.keys(qp).length ? `?${new URLSearchParams(qp)}` : "";
+    return apiRequest(`/api/v1/billing/receivables/${qs}`);
+  },
+};
+
+export const revenueRecognitionAPI = {
+  list: (params) => {
+    const qp = params
+      ? Object.entries(params).reduce((acc, [k, v]) => {
+          if (v !== undefined && v !== null && v !== "") acc[k] = v;
+          return acc;
+        }, {})
+      : {};
+    const qs = Object.keys(qp).length ? `?${new URLSearchParams(qp)}` : "";
+    return apiRequest(`/api/v1/billing/revenue-recognition/${qs}`);
+  },
+  export: (params) => {
+    const qp = params
+      ? Object.entries(params).reduce((acc, [k, v]) => {
+          if (v !== undefined && v !== null && v !== "") acc[k] = v;
+          return acc;
+        }, {})
+      : {};
+    const qs = Object.keys(qp).length ? `?${new URLSearchParams(qp)}` : "";
+    const scopeId = getActiveScopeId();
+    return fetch(`${BASE_URL}/api/v1/billing/revenue-recognition/export/${qs}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        ...(scopeId && { "X-Scope-ID": scopeId }),
+      },
+    }).then((r) => r.blob());
+  },
 };
 export const arRulesAPI = {
   ...crud("/api/v1/billing/ar-rules/"),
@@ -539,7 +692,64 @@ export const dashboardAPI = {
     const qs = Object.keys(qp).length ? `?${new URLSearchParams(qp)}` : "";
     return apiRequest(`/api/v1/reports/dashboard/occupancy_timeline/${qs}`);
   },
+  getAlerts: (params) => {
+    const qp = params
+      ? Object.entries(params).reduce((acc, [k, v]) => {
+          if (v !== undefined && v !== null && v !== "") acc[k] = v;
+          return acc;
+        }, {})
+      : {};
+    const qs = Object.keys(qp).length ? `?${new URLSearchParams(qp)}` : "";
+    return apiRequest(`/api/v1/reports/dashboard/alerts/${qs}`);
+  },
+  getQuickActions: (params) => {
+    const qp = params
+      ? Object.entries(params).reduce((acc, [k, v]) => {
+          if (v !== undefined && v !== null && v !== "") acc[k] = v;
+          return acc;
+        }, {})
+      : {};
+    const qs = Object.keys(qp).length ? `?${new URLSearchParams(qp)}` : "";
+    return apiRequest(`/api/v1/reports/dashboard/quick_actions/${qs}`);
+  },
+  getProperties: (params) => {
+    const qp = params
+      ? Object.entries(params).reduce((acc, [k, v]) => {
+          if (v !== undefined && v !== null && v !== "") acc[k] = v;
+          return acc;
+        }, {})
+      : {};
+    const qs = Object.keys(qp).length ? `?${new URLSearchParams(qp)}` : "";
+    return apiRequest(`/api/v1/reports/dashboard/properties/${qs}`);
+  },
+  getPortfolioStats: (params) => {
+    const qp = params
+      ? Object.entries(params).reduce((acc, [k, v]) => {
+          if (v !== undefined && v !== null && v !== "") acc[k] = v;
+          return acc;
+        }, {})
+      : {};
+    const qs = Object.keys(qp).length ? `?${new URLSearchParams(qp)}` : "";
+    return apiRequest(`/api/v1/reports/dashboard/portfolio_stats/${qs}`);
+  },
   getFilters: () => apiRequest("/api/v1/reports/dashboard/filters/"),
+};
+
+// ── Approvals API ──────────────────────────────────────────────────────────
+export const approvalsAPI = {
+  ...crud("/api/v1/approvals/rules/"),
+  activate: (id) =>
+    apiRequest(`/api/v1/approvals/rules/${id}/activate/`, { method: "POST" }),
+  deactivate: (id) =>
+    apiRequest(`/api/v1/approvals/rules/${id}/deactivate/`, { method: "POST" }),
+  simulate: (payload) =>
+    apiRequest("/api/v1/approvals/rules/simulate/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  stats: () => apiRequest("/api/v1/approvals/rules/stats/"),
+  duplicate: (id) =>
+    apiRequest(`/api/v1/approvals/rules/${id}/duplicate/`, { method: "POST" }),
 };
 
 export default apiRequest;

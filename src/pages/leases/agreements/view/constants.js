@@ -315,6 +315,21 @@ export const calculateBufferSummary = ({
     areaSqft && areaSqft > 0 ? round2(effectiveMonthly / areaSqft) : null;
   const currentDailyBaseRent = round2(monthlyBase / daysInMonthUtc(commencement));
 
+  // Commencement month partial info
+  const commencementMonthDays = daysInMonthUtc(commencement);
+  const commencementRemainingDays = commencementMonthDays - commencement.getUTCDate() + 1;
+  const commencementPartialRent = round2(currentDailyBaseRent * commencementRemainingDays);
+
+  // First charge month partial info
+  const firstChargeMonthDays = daysInMonthUtc(firstChargeStart);
+  const firstChargeRemainingDays = firstChargeMonthDays - firstChargeStart.getUTCDate() + 1;
+  const firstChargeDailyRate = round2(monthlyBase / firstChargeMonthDays);
+
+  // Next full month daily rate
+  const nextFullMonthStart = addDaysUtc(endOfMonthUtc(firstChargeStart), 1);
+  const nextFullMonthDays = daysInMonthUtc(nextFullMonthStart);
+  const nextFullMonthDailyRate = round2(monthlyBase / nextFullMonthDays);
+
   return {
     primaryBufferDays: primaryDays,
     extendedBufferDays: extendedDays,
@@ -336,6 +351,14 @@ export const calculateBufferSummary = ({
     termExtendedBufferConcession: termTotals.extendedConcession,
     termNetCollectible: termTotals.charged,
     currentDailyBaseRent,
+    commencementMonthDays,
+    commencementRemainingDays,
+    commencementPartialRent,
+    firstChargeMonthDays,
+    firstChargeRemainingDays,
+    firstChargeDailyRate,
+    nextFullMonthDays,
+    nextFullMonthDailyRate,
     firstInvoiceAmount: round2(firstInvoiceAmount),
     nextCycleAmount: round2(nextCycleAmount),
   };
