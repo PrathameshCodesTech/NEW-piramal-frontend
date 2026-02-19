@@ -42,6 +42,14 @@ export default function SiteCreatePage() {
   });
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+  const handleNameChange = (e) => {
+    const name = e.target.value;
+    setForm((p) => ({
+      ...p,
+      name,
+      code: p.code || name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -75,7 +83,7 @@ export default function SiteCreatePage() {
             <h4 className="text-sm font-semibold text-gray-700">Basic Info</h4>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Input label="Site Name" icon={Building2} value={form.name} onChange={set("name")} required />
+            <Input label="Site Name" icon={Building2} value={form.name} onChange={handleNameChange} required />
             <Input label="Code" icon={Hash} value={form.code} onChange={set("code")} required placeholder="e.g. site-alpha" />
             <Select label="Site Type" value={form.site_type} onChange={set("site_type")} options={SITE_TYPES} required />
             <Select label="Ownership Type" value={form.ownership_type} onChange={set("ownership_type")} options={OWNERSHIP_TYPES} />

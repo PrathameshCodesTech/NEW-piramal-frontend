@@ -32,7 +32,6 @@ export default function ClauseEditPage() {
     category: "",
     applies_to: "ALL",
     status: "DRAFT",
-    body_text: "",
   });
 
   useEffect(() => {
@@ -43,7 +42,6 @@ export default function ClauseEditPage() {
           category: String(clause.category || clause.category_detail?.id || ""),
           applies_to: clause.applies_to || "ALL",
           status: clause.status || "DRAFT",
-          body_text: clause.body_text || clause.current_version_data?.body_text || "",
         });
         setCategories(catRes?.results || catRes || []);
         setLoading(false);
@@ -57,12 +55,13 @@ export default function ClauseEditPage() {
     e.preventDefault();
     setSaving(true);
     try {
+      // Only PATCH metadata columns — body_text and config live on ClauseVersion,
+      // not on the Clause model. Use "Bump Version" on the view page to update those.
       await clausesAPI.update(id, {
         title: form.title,
         category: parseInt(form.category, 10),
         applies_to: form.applies_to,
         status: form.status,
-        body_text: form.body_text || null,
       });
       toast.success("Clause updated");
       navigate(`/clauses/clauses/${id}`);
@@ -86,32 +85,26 @@ export default function ClauseEditPage() {
   return (
     <div>
       <PageHeader title="Edit Clause" backTo={`/clauses/clauses/${id}`} />
-      <Card className="p-6 max-w-3xl">
+      <Card className="p-6 max-w-xl">
+        <div className="border-l-2 border-blue-400 pl-4 py-1 mb-5">
+          <p className="text-sm font-medium text-gray-700">Editing metadata only</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Title, category, applicability and status. To update clause body or legal config (renewal, termination, etc.), use <strong>Bump Version</strong> on the view page — this creates a proper version record.
+          </p>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <Input label="Title" value={form.title} onChange={set("title")} required />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
-              <Input label="Title" value={form.title} onChange={set("title")} required />
-            </div>
             <Select label="Category" value={form.category} onChange={set("category")} options={categoryOptions} required />
             <Select label="Applies To" value={form.applies_to} onChange={set("applies_to")} options={APPLIES_OPTIONS} />
             <Select label="Status" value={form.status} onChange={set("status")} options={STATUS_OPTIONS} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Clause Body</label>
-            <textarea
-              value={form.body_text}
-              onChange={set("body_text")}
-              rows={10}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500 resize-y"
-              placeholder="Enter the clause text..."
-            />
           </div>
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="secondary" type="button" onClick={() => navigate(`/clauses/clauses/${id}`)}>
               Cancel
             </Button>
             <Button type="submit" loading={saving}>
-              Save Changes
+              Save
             </Button>
           </div>
         </form>

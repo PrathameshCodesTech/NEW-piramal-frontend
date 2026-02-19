@@ -44,9 +44,22 @@ const GOVERNING_LAW_OPTIONS = [
   { value: "India", label: "India" },
 ];
 
-const parseYears = (s) => {
-  const n = parseInt(String(s || "").replace(/[^\d]/g, ""), 10);
-  return Number.isFinite(n) ? n : 0;
+const parseCycleFromTermLabel = (termLabel) => {
+  const yearsMatch = String(termLabel || "").match(/(\d+)\s*year/i);
+  const monthsMatch = String(termLabel || "").match(/(\d+)\s*month/i);
+  const years = yearsMatch ? Number(yearsMatch[1]) : 0;
+  const months = monthsMatch ? Number(monthsMatch[1]) : 0;
+  return {
+    years: Number.isFinite(years) ? years : 0,
+    months: Number.isFinite(months) ? Math.min(11, Math.max(0, months)) : 0,
+  };
+};
+
+const formatCycleTerm = (cycle) => {
+  if (cycle?.term) return cycle.term;
+  const years = Number(cycle?.termYears ?? cycle?.term_years ?? 0);
+  const months = Number(cycle?.termMonths ?? cycle?.term_months ?? 0);
+  return `${years} year${years === 1 ? "" : "s"}${months > 0 ? ` ${months} month${months === 1 ? "" : "s"}` : ""}`;
 };
 
 const initialConfigForm = {
@@ -105,8 +118,19 @@ export default function ClauseCreatePage({ inModal = false }) {
 
   const buildInitialConfig = () => {
     const cycles = (configForm.renewalCycles || []).map((x) => ({
-      term_years: parseYears(x.term),
-      rent_formula: x.rentFormula || "",
+      ...(() => {
+        const yearsFromField = Number(x.termYears);
+        const monthsFromField = Number(x.termMonths);
+        if (Number.isFinite(yearsFromField) || Number.isFinite(monthsFromField)) {
+          return {
+            term_years: Number.isFinite(yearsFromField) ? Math.max(0, yearsFromField) : 0,
+            term_months: Number.isFinite(monthsFromField) ? Math.min(11, Math.max(0, monthsFromField)) : 0,
+          };
+        }
+        const parsed = parseCycleFromTermLabel(x.term);
+        return { term_years: parsed.years, term_months: parsed.months };
+      })(),
+      rent_formula: x.rentFormula || x.rent_formula || "",
       comments: x.comments || "",
     }));
     return {
@@ -154,9 +178,27 @@ export default function ClauseCreatePage({ inModal = false }) {
   };
 
   const handleAddRenewalCycle = (cycle) => {
+    const years = Number(cycle.termYears ?? cycle.term_years ?? 0);
+    const months = Number(cycle.termMonths ?? cycle.term_months ?? 0);
+    const normalizedYears = Number.isFinite(years) ? Math.max(0, years) : 0;
+    const normalizedMonths = Number.isFinite(months) ? Math.min(11, Math.max(0, months)) : 0;
+    const normalizedFormula = cycle.rentFormula || cycle.rent_formula || "";
     setConfigForm((p) => ({
       ...p,
-      renewalCycles: [...(p.renewalCycles || []), { ...cycle, cycle: (p.renewalCycles?.length || 0) + 1 }],
+      renewalCycles: [
+        ...(p.renewalCycles || []),
+        {
+          ...cycle,
+          cycle: (p.renewalCycles?.length || 0) + 1,
+          termYears: normalizedYears,
+          termMonths: normalizedMonths,
+          term_years: normalizedYears,
+          term_months: normalizedMonths,
+          rentFormula: normalizedFormula,
+          rent_formula: normalizedFormula,
+          term: formatCycleTerm({ termYears: normalizedYears, termMonths: normalizedMonths }),
+        },
+      ],
     }));
     setShowAddCycleModal(false);
   };
@@ -313,8 +355,8 @@ export default function ClauseCreatePage({ inModal = false }) {
                   {(configForm.renewalCycles || []).map((cycle, idx) => (
                     <tr key={idx} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm">{cycle.cycle}</td>
-                      <td className="px-4 py-3 text-sm">{cycle.term}</td>
-                      <td className="px-4 py-3 text-sm">{cycle.rentFormula}</td>
+                      <td className="px-4 py-3 text-sm">{formatCycleTerm(cycle)}</td>
+                      <td className="px-4 py-3 text-sm">{cycle.rentFormula || cycle.rent_formula}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{cycle.comments}</td>
                       <td className="px-4 py-3">
                         <button

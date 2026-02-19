@@ -107,6 +107,12 @@ export default function WizardAmenityStep({ siteId: initialSiteId, onNext, onBac
     setShowModal(true);
   };
 
+  const handleNameChange = (e) => {
+    const name = e.target.value;
+    setNewName(name);
+    setNewCode((prev) => prev || name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""));
+  };
+
   const handleAddAmenity = async (e) => {
     e.preventDefault();
     setAdding(true);
@@ -255,7 +261,7 @@ export default function WizardAmenityStep({ siteId: initialSiteId, onNext, onBac
               <h4 className="text-sm font-semibold text-gray-700">Amenity Details</h4>
             </div>
             <div className="space-y-4">
-              <Input label="Name" icon={Sparkles} value={newName} onChange={(e) => setNewName(e.target.value)} required />
+              <Input label="Name" icon={Sparkles} value={newName} onChange={handleNameChange} required />
               <Input label="Code" icon={Hash} value={newCode} onChange={(e) => setNewCode(e.target.value)} required placeholder="e.g. swimming-pool" />
             </div>
           </div>

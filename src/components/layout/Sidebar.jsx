@@ -29,15 +29,15 @@ const adminNav = [
 ];
 
 const tenantNavBase = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/properties", label: "Properties", icon: Building2, match: (p) => p.startsWith("/properties") && !p.startsWith("/properties/setup") },
-  { to: "/properties/setup", label: "Setup Wizard", icon: Wand2 },
-  { to: "/tenants", label: "Tenant Setup", icon: Users },
-  { to: "/leases", label: "Lease Management", icon: FileCheck },
-  { to: "/billing", label: "Billing & AR", icon: Receipt },
-  { to: "/rent-schedule-revenue", label: "Rent Schedule & Revenue Recognition", icon: CalendarRange, match: (p) => p.startsWith("/rent-schedule-revenue") },
-  { to: "/clauses", label: "Clause Library", icon: BookOpen },
-  { to: "/approvals/rules", label: "Approval Matrices", icon: GitMerge, match: (p) => p.startsWith("/approvals") },
+  { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true, module: "DASHBOARD" },
+  { to: "/properties", label: "Properties", icon: Building2, match: (p) => p.startsWith("/properties") && !p.startsWith("/properties/setup"), module: "PROPERTY" },
+  { to: "/properties/setup", label: "Setup Wizard", icon: Wand2, module: "PROPERTY" },
+  { to: "/tenants", label: "Tenant Setup", icon: Users, module: "TENANT" },
+  { to: "/leases", label: "Lease Management", icon: FileCheck, module: "LEASE" },
+  { to: "/billing", label: "Billing & AR", icon: Receipt, module: "AR" },
+  { to: "/rent-schedule-revenue", label: "Rent Schedule & Revenue Recognition", icon: CalendarRange, match: (p) => p.startsWith("/rent-schedule-revenue"), module: "REVENUE" },
+  { to: "/clauses", label: "Clause Library", icon: BookOpen, module: "DOCUMENTS" },
+  { to: "/approvals/rules", label: "Approval Matrices", icon: GitMerge, match: (p) => p.startsWith("/approvals"), module: "APPROVALS" },
 ];
 
 const tenantNavOrgStructure = { to: "/org-structure/orgs", label: "Org Structure", icon: Layers, match: (p) => ["/org-structure"].some((base) => p === base || p.startsWith(base + "/")) };
@@ -45,14 +45,28 @@ const tenantNavUserMgmt = { to: "/user-management/users", label: "User Managemen
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, availableScopes, activeModulePermissions } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const isAdmin = user?.is_superuser === true;
-  const { availableScopes } = useAuth();
   const hasScopeAccess = (availableScopes?.length ?? 0) > 0;
-  const tenantNav = [...tenantNavBase, ...(hasScopeAccess ? [tenantNavOrgStructure, tenantNavUserMgmt] : [])];
+
+  // Returns true if the user can view this module.
+  // Superusers always see everything. If no module permissions defined (empty role),
+  // show all items. If permissions are defined, check can_view.
+  const canView = (module) => {
+    if (isAdmin || !module) return true;
+    const perms = activeModulePermissions || {};
+    if (Object.keys(perms).length === 0) return true; // role has no module perms = no restriction
+    return perms[module]?.can_view === true;
+  };
+
+  const tenantNav = [
+    ...tenantNavBase,
+    ...(hasScopeAccess ? [tenantNavOrgStructure, tenantNavUserMgmt] : []),
+  ].filter((item) => canView(item.module));
+
   const navItems = isAdmin ? adminNav : tenantNav;
 
   const handleLogout = () => {

@@ -11,7 +11,6 @@ import {
   leaseDocumentsAPI,
   sitesAPI,
   tenantCompaniesAPI,
-  tenantContactsAPI,
 } from "../../../../services/api";
 import PageHeader from "../../../../components/ui/PageHeader";
 import Button from "../../../../components/ui/Button";
@@ -40,7 +39,6 @@ const initialBasicForm = {
   lease_id: "",
   agreement_type: "OFFICE",
   tenant: "",
-  primary_contact: "",
   site: "",
   landlord_entity: "",
   ref_code: "",
@@ -108,7 +106,6 @@ export default function AgreementCreatePage() {
 
   const [tenants, setTenants] = useState([]);
   const [sites, setSites] = useState([]);
-  const [contacts, setContacts] = useState([]);
   const [templates, setTemplates] = useState([]);
 
   const [basicForm, setBasicForm] = useState(initialBasicForm);
@@ -121,12 +118,86 @@ export default function AgreementCreatePage() {
   const [floorOptions, setFloorOptions] = useState([]);
   const [unitOptions, setUnitOptions] = useState([]);
 
-  const [terminationForm, setTerminationForm] = useState({
-    tenant_early_exit_permitted: false,
-    tenant_notice_days: "90",
-    termination_clause: "",
+  const [clauseForm, setClauseForm] = useState({
+    termination: {
+      tenant_early_exit_permitted: false,
+      tenant_notice_days: 90,
+      tenant_penalty_type: "",
+      tenant_penalty_value: "",
+      tenant_exit_conditions: "",
+      landlord_early_termination_permitted: false,
+      landlord_notice_days: 180,
+      landlord_compensation_type: "",
+      landlord_compensation_value: "",
+      landlord_relocation_assistance: false,
+      landlord_termination_conditions: "",
+      break_clause_enabled: false,
+      break_date: "",
+      break_notice_days: "",
+      break_penalty: "",
+      break_penalty_type: "",
+      break_conditions: "",
+      cure_period_days: 30,
+      termination_clause: "",
+    },
+    renewal_option: {
+      pre_renewal_notice_days: 120,
+      auto_renewal_enabled: false,
+      auto_renewal_term_months: "",
+      max_renewal_cycles: 3,
+      renewal_notes: "",
+    },
+    sublet_signage: {
+      sublet_permission: "PROHIBITED",
+      sublet_approval_required: true,
+      max_sublet_percentage: "",
+      sublet_restrictions: "",
+      signage_permitted: true,
+      signage_approval_required: true,
+      signage_area_sqft: "",
+      signage_area_unit: "SQFT",
+      signage_locations: "",
+      signage_cost_responsibility: "Tenant",
+    },
+    exclusivity: {
+      exclusive_use_granted: false,
+      exclusive_category: "",
+      exclusive_radius: "Within Property",
+      exclusive_exceptions: "",
+      non_compete_enabled: false,
+      non_compete_duration_months: "",
+      non_compete_radius_km: "",
+      non_compete_scope: "",
+    },
+    insurance_requirement: {
+      restore_condition: "ORIGINAL",
+      restore_details: "",
+      reinstatement_timeline_days: "",
+      public_liability_required: true,
+      public_liability_coverage: "",
+      public_liability_currency: "INR",
+      property_insurance_required: true,
+      property_insurance_coverage: "",
+      landlord_additional_insured: true,
+      proof_required: true,
+      proof_frequency: "Annual",
+      indemnity_notes: "",
+    },
+    dispute_resolution: {
+      dispute_mechanism: "MEDIATION",
+      arbitration_seat: "",
+      arbitration_language: "English",
+      number_of_arbitrators: 1,
+      arbitration_institution: "",
+      mediation_required_first: false,
+      mediation_period_days: "",
+      governing_law_country: "India",
+      governing_law_state: "",
+      jurisdiction_court: "",
+      exclusive_jurisdiction: true,
+      dispute_summary: "",
+    },
   });
-  const [clauseConfig, setClauseConfig] = useState(null);
   const [clauseLoading, setClauseLoading] = useState(false);
 
   const [notes, setNotes] = useState([]);
@@ -153,17 +224,6 @@ export default function AgreementCreatePage() {
       .then((r) => setTemplates(r?.results || r || []))
       .catch(() => setTemplates([]));
   }, []);
-
-  useEffect(() => {
-    if (!basicForm.tenant) {
-      setContacts([]);
-      return;
-    }
-    tenantContactsAPI
-      .list({ company_id: basicForm.tenant })
-      .then((r) => setContacts(r?.results || r || []))
-      .catch(() => setContacts([]));
-  }, [basicForm.tenant]);
 
   useEffect(() => {
     if (!agreementId) return;
@@ -237,7 +297,6 @@ export default function AgreementCreatePage() {
       lease_id: agreement.lease_id || "",
       agreement_type: agreement.agreement_type || "OFFICE",
       tenant: agreement.tenant ? String(agreement.tenant) : "",
-      primary_contact: agreement.primary_contact ? String(agreement.primary_contact) : "",
       site: agreement.site ? String(agreement.site) : "",
       landlord_entity: agreement.landlord_entity || "",
       ref_code: agreement.ref_code || "",
@@ -350,14 +409,24 @@ export default function AgreementCreatePage() {
     setClauseLoading(true);
     try {
       const res = await leaseClauseConfigAPI.get(agreementId);
-      setClauseConfig(res);
-      setTerminationForm({
-        tenant_early_exit_permitted: !!res?.termination?.tenant_early_exit_permitted,
-        tenant_notice_days: res?.termination?.tenant_notice_days ?? 90,
-        termination_clause: res?.termination?.termination_clause || "",
-      });
+      const merge = (defaults, src) => {
+        if (!src) return defaults;
+        const out = { ...defaults };
+        Object.keys(defaults).forEach((k) => {
+          if (src[k] !== undefined && src[k] !== null) out[k] = src[k];
+        });
+        return out;
+      };
+      setClauseForm((p) => ({
+        termination: merge(p.termination, res?.termination),
+        renewal_option: merge(p.renewal_option, res?.renewal_option),
+        sublet_signage: merge(p.sublet_signage, res?.sublet_signage),
+        exclusivity: merge(p.exclusivity, res?.exclusivity),
+        insurance_requirement: merge(p.insurance_requirement, res?.insurance_requirement),
+        dispute_resolution: merge(p.dispute_resolution, res?.dispute_resolution),
+      }));
     } catch {
-      setClauseConfig(null);
+      /* keep defaults on error */
     } finally {
       setClauseLoading(false);
     }
@@ -419,7 +488,7 @@ export default function AgreementCreatePage() {
         lease_id: basicForm.lease_id,
         agreement_type: basicForm.agreement_type,
         tenant: basicForm.tenant ? parseInt(basicForm.tenant, 10) : null,
-        primary_contact: basicForm.primary_contact ? parseInt(basicForm.primary_contact, 10) : null,
+        primary_contact: null,
         site: basicForm.site ? parseInt(basicForm.site, 10) : null,
         landlord_entity: basicForm.landlord_entity || "",
         ref_code: basicForm.ref_code || "",
@@ -568,13 +637,14 @@ export default function AgreementCreatePage() {
     setSavingClause(true);
     try {
       await leaseClauseConfigAPI.update(agreementId, {
-        termination: {
-          tenant_early_exit_permitted: !!terminationForm.tenant_early_exit_permitted,
-          tenant_notice_days: toNumberOrNull(terminationForm.tenant_notice_days) || 90,
-          termination_clause: terminationForm.termination_clause || "",
-        },
+        termination: clauseForm.termination,
+        renewal_option: clauseForm.renewal_option,
+        sublet_signage: clauseForm.sublet_signage,
+        exclusivity: clauseForm.exclusivity,
+        insurance_requirement: clauseForm.insurance_requirement,
+        dispute_resolution: clauseForm.dispute_resolution,
       });
-      toast.success("Clause config updated");
+      toast.success("Legal config saved");
       await fetchClauseConfig();
       goNext();
     } catch (err) {
@@ -674,7 +744,6 @@ export default function AgreementCreatePage() {
 
   const tenantOptions = tenants.map((t) => ({ value: String(t.id), label: t.legal_name || `Tenant ${t.id}` }));
   const siteOptions = sites.map((s) => ({ value: String(s.id), label: s.name || s.code || `Site ${s.id}` }));
-  const contactOptions = contacts.map((c) => ({ value: String(c.id), label: c.name || c.email || `Contact ${c.id}` }));
   const templateOptions = templates.map((t) => ({ value: String(t.id), label: t.name }));
   const totalAllocatedAreaFromData = toNumberOrNull(data?.total_allocated_area);
   const totalAllocatedAreaFromAllocations = allocations.reduce(
@@ -742,10 +811,10 @@ export default function AgreementCreatePage() {
             <TenantSetupTab
               tenantOptions={tenantOptions}
               selectedTenant={basicForm.tenant}
-              onTenantSelect={(val) => setBasicForm((p) => ({ ...p, tenant: val, primary_contact: "" }))}
+              onTenantSelect={(val) => setBasicForm((p) => ({ ...p, tenant: val }))}
               onTenantCreated={(newTenant) => {
                 setTenants((prev) => [...prev, newTenant]);
-                setBasicForm((p) => ({ ...p, tenant: String(newTenant.id), primary_contact: "" }));
+                setBasicForm((p) => ({ ...p, tenant: String(newTenant.id) }));
               }}
             />
           )}
@@ -756,7 +825,6 @@ export default function AgreementCreatePage() {
               setForm={setBasicForm}
               tenantOptions={tenantOptions}
               siteOptions={siteOptions}
-              contactOptions={contactOptions}
               onSubmit={handleSubmit}
               saving={savingBasic}
             />
@@ -794,11 +862,10 @@ export default function AgreementCreatePage() {
           {activeTab === 4 && (
             <ClauseConfigTab
               loading={clauseLoading}
-              form={terminationForm}
-              setForm={setTerminationForm}
+              form={clauseForm}
+              setForm={setClauseForm}
               onSubmit={handleSaveClauseConfig}
               saving={savingClause}
-              clauseConfig={clauseConfig}
             />
           )}
 
@@ -855,5 +922,4 @@ export default function AgreementCreatePage() {
     </div>
   );
 }
-
 

@@ -19,13 +19,25 @@ const APPROVAL_OPTIONS = [
   { value: "AR_EXECUTIVE", label: "AR Executive" },
   { value: "AR_SUPERVISOR", label: "AR Supervisor" },
   { value: "AR_MANAGER", label: "AR Manager" },
+  { value: "OPERATIONS_MANAGER", label: "Operations Manager" },
   { value: "FINANCE_HEAD", label: "Finance Head" },
   { value: "CFO", label: "CFO" },
+];
+const VARIANCE_BASIS_OPTIONS = [
+  { value: "PERCENTAGE", label: "Percentage (%)" },
+  { value: "FIXED_AMOUNT", label: "Fixed Amount" },
 ];
 const STATUS_OPTIONS = [
   { value: "ACTIVE", label: "Active" },
   { value: "INACTIVE", label: "Inactive" },
 ];
+
+const Chk = ({ label, checked, onChange }) => (
+  <label className="flex items-center gap-2 text-sm">
+    <input type="checkbox" checked={checked} onChange={onChange} className="rounded" />
+    {label}
+  </label>
+);
 
 export default function CreditRuleCreatePage({ inModal = false }) {
   const navigate = useNavigate();
@@ -34,9 +46,13 @@ export default function CreditRuleCreatePage({ inModal = false }) {
     name: "",
     description: "",
     trigger_type: "PAYMENT_VARIANCE",
+    variance_basis: "PERCENTAGE",
     variance_threshold: "",
+    max_credit_amount: "",
     approval_level: "AR_SUPERVISOR",
     auto_approve: false,
+    auto_post_to_gl: false,
+    requires_documentation: false,
     status: "ACTIVE",
   });
 
@@ -44,8 +60,19 @@ export default function CreditRuleCreatePage({ inModal = false }) {
     e.preventDefault();
     setLoading(true);
     try {
-      const payload = { ...form };
+      const payload = {
+        name: form.name,
+        description: form.description,
+        trigger_type: form.trigger_type,
+        variance_basis: form.variance_basis,
+        approval_level: form.approval_level,
+        auto_approve: form.auto_approve,
+        auto_post_to_gl: form.auto_post_to_gl,
+        requires_documentation: form.requires_documentation,
+        status: form.status,
+      };
       if (form.variance_threshold) payload.variance_threshold = parseFloat(form.variance_threshold);
+      if (form.max_credit_amount) payload.max_credit_amount = parseFloat(form.max_credit_amount);
       const res = await creditRulesAPI.create(payload);
       toast.success("Credit rule created");
       navigate("/billing/credit-rules/" + res.id);
@@ -59,21 +86,56 @@ export default function CreditRuleCreatePage({ inModal = false }) {
   const set = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
 
   const content = (
-    <Card className={inModal ? "p-0 border-0 shadow-none" : "p-6 max-w-xl"}>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input label="Name" value={form.name} onChange={set("name")} required />
-        <Input label="Description" value={form.description} onChange={set("description")} />
-        <Select label="Trigger Type" value={form.trigger_type} onChange={set("trigger_type")} options={TRIGGER_OPTIONS} />
-        <Input label="Variance Threshold (optional)" type="number" step="0.01" value={form.variance_threshold} onChange={set("variance_threshold")} />
-        <Select label="Approval Level" value={form.approval_level} onChange={set("approval_level")} options={APPROVAL_OPTIONS} />
-        <label className="flex items-center gap-2"><input type="checkbox" checked={form.auto_approve} onChange={set("auto_approve")} className="rounded" />Auto approve</label>
-        <Select label="Status" value={form.status} onChange={set("status")} options={STATUS_OPTIONS} />
-        <div className="flex gap-2 pt-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <Card className={inModal ? "p-0 border-0 shadow-none" : "p-6 max-w-xl"}>
+        <div className="space-y-4">
+          <Input label="Name" value={form.name} onChange={set("name")} required />
+          <Input label="Description" value={form.description} onChange={set("description")} />
+          <Select label="Trigger Type" value={form.trigger_type} onChange={set("trigger_type")} options={TRIGGER_OPTIONS} />
+
+          <div className="border-t pt-4">
+            <p className="text-xs font-medium text-gray-500 mb-3">Variance / Amount</p>
+            <div className="space-y-3">
+              <Select label="Variance Basis" value={form.variance_basis} onChange={set("variance_basis")} options={VARIANCE_BASIS_OPTIONS} />
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label={form.variance_basis === "PERCENTAGE" ? "Variance Threshold (%)" : "Variance Threshold (amount)"}
+                  type="number" step="0.01"
+                  value={form.variance_threshold}
+                  onChange={set("variance_threshold")}
+                  placeholder="Optional"
+                />
+                <Input label="Max Credit Amount" type="number" step="0.01" value={form.max_credit_amount} onChange={set("max_credit_amount")} placeholder="Optional cap" />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t pt-4">
+            <p className="text-xs font-medium text-gray-500 mb-3">Approval</p>
+            <div className="space-y-3">
+              <Select label="Approval Level" value={form.approval_level} onChange={set("approval_level")} options={APPROVAL_OPTIONS} />
+              <Chk label="Auto-approve (no manual approval needed)" checked={form.auto_approve} onChange={set("auto_approve")} />
+            </div>
+          </div>
+
+          <div className="border-t pt-4">
+            <p className="text-xs font-medium text-gray-500 mb-3">Processing</p>
+            <div className="space-y-2">
+              <Chk label="Auto-post to GL on approval" checked={form.auto_post_to_gl} onChange={set("auto_post_to_gl")} />
+              <Chk label="Requires supporting documentation" checked={form.requires_documentation} onChange={set("requires_documentation")} />
+            </div>
+          </div>
+
+          <div className="border-t pt-4">
+            <Select label="Status" value={form.status} onChange={set("status")} options={STATUS_OPTIONS} />
+          </div>
+        </div>
+        <div className="flex gap-2 pt-6">
           <Button type="button" variant="secondary" onClick={() => navigate("/billing/credit-rules")}>Cancel</Button>
           <Button type="submit" loading={loading}>Create</Button>
         </div>
-      </form>
-    </Card>
+      </Card>
+    </form>
   );
 
   if (inModal) return content;

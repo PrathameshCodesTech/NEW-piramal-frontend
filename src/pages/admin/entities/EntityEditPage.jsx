@@ -16,11 +16,11 @@ export default function EntityEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [companies, setCompanies] = useState([]);
-  const [form, setForm] = useState({ company: "", name: "", legal_name: "", registration_number: "", tax_id: "", address: "", city: "", state: "", country: "" });
+  const [form, setForm] = useState({ company: "", name: "", code: "", legal_name: "", registration_number: "", tax_id: "", address: "", city: "", state: "", country: "" });
 
   useEffect(() => {
     Promise.all([entitiesAPI.get(id), companiesAPI.list()]).then(([res, compRes]) => {
-      setForm({ company: res.company || "", name: res.name || "", legal_name: res.legal_name || "", registration_number: res.registration_number || "", tax_id: res.tax_id || "", address: res.address || "", city: res.city || "", state: res.state || "", country: res.country || "" });
+      setForm({ company: res.company || "", name: res.name || "", code: res.code || "", legal_name: res.legal_name || "", registration_number: res.registration_number || "", tax_id: res.tax_id || "", address: res.address || "", city: res.city || "", state: res.state || "", country: res.country || "" });
       setCompanies(compRes?.results || compRes || []);
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -44,6 +44,7 @@ export default function EntityEditPage() {
           <Select label="Company" value={form.company} onChange={set("company")} required options={companies.map((c) => ({ value: c.id, label: c.name }))} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="Name" value={form.name} onChange={set("name")} required />
+            <Input label="Code" value={form.code} onChange={set("code")} required placeholder="e.g. luminaire-mumbai" />
             <Input label="Legal Name" value={form.legal_name} onChange={set("legal_name")} />
             <Input label="Registration Number" value={form.registration_number} onChange={set("registration_number")} />
             <Input label="Tax ID" value={form.tax_id} onChange={set("tax_id")} />

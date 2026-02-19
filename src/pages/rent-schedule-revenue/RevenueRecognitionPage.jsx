@@ -11,7 +11,7 @@ import Select from "../../components/ui/Select";
 import Input from "../../components/ui/Input";
 import SimplePie from "../dashboard/ui/SimplePie";
 
-const BASE_PATH = "/rent-schedule-revenue/invoice";
+const BASE_PATH = "/billing/invoices";
 
 function formatAmount(val) {
   const n = parseFloat(val);

@@ -10,7 +10,7 @@ import EmptyState from "../../components/ui/EmptyState";
 import Select from "../../components/ui/Select";
 import Input from "../../components/ui/Input";
 
-const BASE_PATH = "/rent-schedule-revenue/invoice";
+const BASE_PATH = "/billing/invoices";
 
 function formatAmount(val) {
   const n = parseFloat(val);

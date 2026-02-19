@@ -38,6 +38,14 @@ export default function TowerCreatePage() {
   const siteOptions = sites.map((s) => ({ value: s.id, label: s.name ? `${s.name} (${s.code || s.id})` : `Site #${s.id}` }));
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+  const handleNameChange = (e) => {
+    const name = e.target.value;
+    setForm((p) => ({
+      ...p,
+      name,
+      code: p.code || name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -85,7 +93,7 @@ export default function TowerCreatePage() {
             <h4 className="text-sm font-semibold text-gray-700">Tower Details</h4>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Input label="Tower Name" icon={Building} value={form.name} onChange={set("name")} required />
+            <Input label="Tower Name" icon={Building} value={form.name} onChange={handleNameChange} required />
             <Input label="Code" icon={Hash} value={form.code} onChange={set("code")} required placeholder="e.g. tower-a" />
             <Select label="Building Type" value={form.building_type} onChange={set("building_type")} options={BUILDING_TYPES} />
             <Input label="Total Floors" icon={Layers} type="number" value={form.total_floors} onChange={set("total_floors")} />

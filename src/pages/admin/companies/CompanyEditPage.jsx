@@ -16,11 +16,11 @@ export default function CompanyEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [orgs, setOrgs] = useState([]);
-  const [form, setForm] = useState({ org: "", name: "", legal_name: "", registration_number: "", tax_id: "", address: "", city: "", state: "", country: "" });
+  const [form, setForm] = useState({ org: "", name: "", code: "", legal_name: "", registration_number: "", tax_id: "", address: "", city: "", state: "", country: "" });
 
   useEffect(() => {
     Promise.all([companiesAPI.get(id), orgsAPI.list()]).then(([res, orgRes]) => {
-      setForm({ org: res.org || "", name: res.name || "", legal_name: res.legal_name || "", registration_number: res.registration_number || "", tax_id: res.tax_id || "", address: res.address || "", city: res.city || "", state: res.state || "", country: res.country || "" });
+      setForm({ org: res.org || "", name: res.name || "", code: res.code || "", legal_name: res.legal_name || "", registration_number: res.registration_number || "", tax_id: res.tax_id || "", address: res.address || "", city: res.city || "", state: res.state || "", country: res.country || "" });
       setOrgs(orgRes?.results || orgRes || []);
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -44,6 +44,7 @@ export default function CompanyEditPage() {
           <Select label="Organization" value={form.org} onChange={set("org")} required options={orgs.map((o) => ({ value: o.id, label: o.name }))} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="Name" value={form.name} onChange={set("name")} required />
+            <Input label="Code" value={form.code} onChange={set("code")} required placeholder="e.g. luminaire-realty" />
             <Input label="Legal Name" value={form.legal_name} onChange={set("legal_name")} />
             <Input label="Registration Number" value={form.registration_number} onChange={set("registration_number")} />
             <Input label="Tax ID" value={form.tax_id} onChange={set("tax_id")} />

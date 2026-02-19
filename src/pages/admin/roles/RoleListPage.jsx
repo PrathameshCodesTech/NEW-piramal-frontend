@@ -10,6 +10,7 @@ import { useUserManagementBasePath } from "../../../contexts/UserManagementConte
 import Button from "../../../components/ui/Button";
 import Badge from "../../../components/ui/Badge";
 import EmptyState from "../../../components/ui/EmptyState";
+import ScopeFilterDropdown from "../../../components/ui/ScopeFilterDropdown";
 
 const ROLE_TYPE_COLOR = {
   ADMIN: "purple",
@@ -31,18 +32,21 @@ export default function RoleListPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [scopeFilter, setScopeFilter] = useState("");
   const [expandedId, setExpandedId] = useState(null);
   const [actioning, setActioning] = useState(null);
 
   const loadRoles = () => {
     setLoading(true);
-    rolesAPI.list()
+    const params = {};
+    if (scopeFilter) params.scope_id = scopeFilter;
+    rolesAPI.list(params)
       .then((res) => { setData(res?.results || res || []); })
       .catch(() => {})
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { loadRoles(); }, []);
+  useEffect(() => { loadRoles(); }, [scopeFilter]);
 
   const filtered = data.filter((r) => {
     if (typeFilter && r.role_type !== typeFilter) return false;
@@ -109,6 +113,7 @@ export default function RoleListPage() {
               className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
             />
           </div>
+          <ScopeFilterDropdown value={scopeFilter} onChange={setScopeFilter} className="w-44" />
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}

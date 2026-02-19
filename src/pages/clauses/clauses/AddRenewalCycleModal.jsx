@@ -22,13 +22,19 @@ export default function AddRenewalCycleModal({ onClose, onAdd, cycleNumber }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const term = formData.termYears && formData.termMonths !== undefined
-      ? `${formData.termYears} years${Number(formData.termMonths) > 0 ? ` ${formData.termMonths} months` : ""}`
-      : `${formData.termYears || 0} years`;
+    const years = Math.max(0, Number(formData.termYears || 0));
+    const months = Math.min(11, Math.max(0, Number(formData.termMonths || 0)));
+    const term = `${years} year${years === 1 ? "" : "s"}${months > 0 ? ` ${months} month${months === 1 ? "" : "s"}` : ""}`;
+    const rentFormula = formData.rentFormula || "";
     onAdd({
       cycle: cycleNumber,
+      termYears: years,
+      termMonths: months,
+      term_years: years,
+      term_months: months,
       term,
-      rentFormula: formData.rentFormula || "",
+      rentFormula,
+      rent_formula: rentFormula,
       comments: formData.comments || "",
     });
     onClose();

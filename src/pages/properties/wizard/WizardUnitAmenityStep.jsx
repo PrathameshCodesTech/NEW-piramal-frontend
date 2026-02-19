@@ -229,6 +229,12 @@ export default function WizardUnitAmenityStep({ siteId: initialSiteId, onNext, o
     setShowModal(true);
   };
 
+  const handleNameChange = (e) => {
+    const name = e.target.value;
+    setNewName(name);
+    setNewCode((prev) => prev || name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""));
+  };
+
   const handleAddAmenity = async (e) => {
     e.preventDefault();
     setAdding(true);
@@ -421,7 +427,7 @@ export default function WizardUnitAmenityStep({ siteId: initialSiteId, onNext, o
                 label="Name"
                 icon={Sparkles}
                 value={newName}
-                onChange={(e) => setNewName(e.target.value)}
+                onChange={handleNameChange}
                 required
               />
               <Input

@@ -567,6 +567,17 @@ export const escalationTemplatesAPI = {
   clone: (id) => apiRequest(`/api/v1/leases/escalation-templates/${id}/clone/`, { method: "POST" }),
 };
 
+export const agreementStructuresAPI = {
+  ...crud("/api/v1/leases/agreement-structures/"),
+  tree: () => apiRequest("/api/v1/leases/agreement-structures/tree/"),
+};
+
+export const agreementSectionsAPI = {
+  ...crud("/api/v1/leases/agreement-sections/"),
+  tree: (structureId) =>
+    apiRequest(`/api/v1/leases/agreement-sections/tree/?structure=${structureId}`),
+};
+
 export const leaseAvailabilityAPI = {
   tree: (siteId) => apiRequest(`/api/v1/leases/availability/tree/?site_id=${siteId}`),
 };

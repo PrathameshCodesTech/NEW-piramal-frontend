@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import {
   rentSchedulesAPI,
+  invoicesAPI,
   sitesAPI,
   tenantCompaniesAPI,
   agreementsAPI,
@@ -65,6 +66,10 @@ export default function RentSchedulesPage() {
   });
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showAdjustModal, setShowAdjustModal] = useState(false);
+  const [showMarkInvoicedModal, setShowMarkInvoicedModal] = useState(false);
+  const [invoices, setInvoices] = useState([]);
+  const [invoicesLoading, setInvoicesLoading] = useState(false);
+  const [markInvoiceId, setMarkInvoiceId] = useState("");
   const [generateForm, setGenerateForm] = useState({
     agreement_ids: [],
     period_start: "",
@@ -165,20 +170,29 @@ export default function RentSchedulesPage() {
     }
   };
 
-  const handleMarkInvoiced = async () => {
-    if (selectedIds.size === 0) {
-      toast.error("Select at least one line");
-      return;
-    }
-    const invoiceId = window.prompt("Invoice ID to link (optional):");
-    if (invoiceId === null) return;
+  const openMarkInvoicedModal = () => {
+    if (selectedIds.size === 0) { toast.error("Select at least one line"); return; }
+    setMarkInvoiceId("");
+    setShowMarkInvoicedModal(true);
+    setInvoicesLoading(true);
+    invoicesAPI.list()
+      .then((r) => setInvoices(r?.results || r || []))
+      .catch(() => setInvoices([]))
+      .finally(() => setInvoicesLoading(false));
+  };
+
+  const handleMarkInvoiced = async (e) => {
+    e.preventDefault();
+    if (!markInvoiceId) { toast.error("Select an invoice"); return; }
     setActionLoading(true);
     try {
       const res = await rentSchedulesAPI.markInvoiced({
         line_ids: [...selectedIds],
-        invoice_id: invoiceId ? parseInt(invoiceId, 10) : null,
+        invoice_id: parseInt(markInvoiceId, 10),
       });
-      toast.success(`${res.updated} line(s) marked as invoiced`);
+      toast.success(`${res.updated ?? res.count ?? selectedIds.size} line(s) marked as invoiced`);
+      setShowMarkInvoicedModal(false);
+      setMarkInvoiceId("");
       setSelectedIds(new Set());
       setFilters((f) => ({ ...f }));
     } catch (err) {
@@ -365,7 +379,7 @@ export default function RentSchedulesPage() {
         <div className="flex items-center gap-2">
           {selectedIds.size > 0 && (
             <>
-              <Button variant="secondary" size="sm" icon={CheckCircle} onClick={handleMarkInvoiced} disabled={actionLoading}>
+              <Button variant="secondary" size="sm" icon={CheckCircle} onClick={openMarkInvoicedModal} disabled={actionLoading}>
                 Mark Invoiced ({selectedIds.size})
               </Button>
               <Button variant="secondary" size="sm" icon={Edit3} onClick={() => setShowAdjustModal(true)}>
@@ -452,6 +466,58 @@ export default function RentSchedulesPage() {
                 </Button>
                 <Button type="submit" loading={actionLoading}>
                   Generate
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Mark Invoiced Modal */}
+      {showMarkInvoicedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-lg w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-1">Mark as Invoiced</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Mark <span className="font-medium text-gray-700">{selectedIds.size}</span> schedule line{selectedIds.size !== 1 ? "s" : ""} as invoiced. Select the invoice to link:
+            </p>
+            <form onSubmit={handleMarkInvoiced} className="space-y-4">
+              {invoicesLoading ? (
+                <div className="flex justify-center py-6">
+                  <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Invoice <span className="text-red-500">*</span></label>
+                  <select
+                    value={markInvoiceId}
+                    onChange={(e) => setMarkInvoiceId(e.target.value)}
+                    required
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="">— Select invoice —</option>
+                    {invoices.map((inv) => (
+                      <option key={inv.id} value={inv.id}>
+                        {[
+                          inv.invoice_number || `#${inv.id}`,
+                          inv.tenant_name,
+                          inv.total_amount != null ? `₹${Number(inv.total_amount).toLocaleString("en-IN")}` : null,
+                          inv.status,
+                        ].filter(Boolean).join(" · ")}
+                      </option>
+                    ))}
+                  </select>
+                  {invoices.length === 0 && (
+                    <p className="text-xs text-amber-600 mt-1">No invoices found. Create an invoice first.</p>
+                  )}
+                </div>
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="secondary" type="button" onClick={() => { setShowMarkInvoicedModal(false); setMarkInvoiceId(""); }}>
+                  Cancel
+                </Button>
+                <Button type="submit" loading={actionLoading} disabled={!markInvoiceId || invoicesLoading}>
+                  Mark Invoiced
                 </Button>
               </div>
             </form>

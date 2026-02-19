@@ -14,6 +14,48 @@ import Badge from "../../components/ui/Badge";
 const fmt = (v) => v != null ? `₹${Number(v).toLocaleString("en-IN")}` : "—";
 const fmtM = (m) => m != null ? `${m} mo` : "—";
 
+// Role label with scope context: "Finance Manager (Company: ABC Pvt Ltd)"
+const roleLabel = (r) => {
+  if (!r) return "";
+  const scopeParts = [r.scope_type, r.scope_name].filter(Boolean);
+  return scopeParts.length ? `${r.name}  (${scopeParts.join(": ")})` : r.name;
+};
+
+const SCOPE_ORDER = ["ORG", "COMPANY", "ENTITY", "SITE"];
+const SCOPE_LABELS = { ORG: "Organisation", COMPANY: "Company", ENTITY: "Entity", SITE: "Site" };
+
+// Groups roles by scope_type for <optgroup> rendering
+const groupRoles = (roles) => {
+  const groups = {};
+  roles.forEach((r) => {
+    const key = r.scope_type || "OTHER";
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(r);
+  });
+  const ordered = [...SCOPE_ORDER, ...Object.keys(groups).filter((k) => !SCOPE_ORDER.includes(k))];
+  return ordered.filter((k) => groups[k]).map((k) => ({
+    key: k,
+    label: SCOPE_LABELS[k] || k,
+    roles: groups[k],
+  }));
+};
+
+// Small hint shown below a dropdown once a role is chosen
+function RoleHint({ roleId, roles }) {
+  const r = roles.find((x) => String(x.id) === String(roleId));
+  if (!r) return null;
+  const parts = [
+    r.scope_type ? SCOPE_LABELS[r.scope_type] || r.scope_type : null,
+    r.scope_name || null,
+  ].filter(Boolean);
+  if (!parts.length) return null;
+  return (
+    <p className="text-xs text-blue-600 bg-blue-50 border border-blue-100 rounded px-2 py-1 mt-1 truncate">
+      {parts.join(" › ")}
+    </p>
+  );
+}
+
 const STATUS_COLOR = {
   ACTIVE: "emerald",
   DRAFT: "amber",
@@ -590,10 +632,15 @@ function AddRuleWizard({ onClose, onSaved, roles }) {
                           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
                         >
                           <option value="">Select role</option>
-                          {roles.map((r) => (
-                            <option key={r.id} value={r.id}>{r.name}</option>
+                          {groupRoles(roles).map(({ key, label, roles: grp }) => (
+                            <optgroup key={key} label={`── ${label} ──`}>
+                              {grp.map((r) => (
+                                <option key={r.id} value={r.id}>{roleLabel(r)}</option>
+                              ))}
+                            </optgroup>
                           ))}
                         </select>
+                        <RoleHint roleId={lvl.role} roles={roles} />
                       </div>
                       <div>
                         <label className="text-xs text-gray-500 mb-1 block">SLA (hours)</label>
@@ -702,10 +749,15 @@ function AddRuleWizard({ onClose, onSaved, roles }) {
                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
                       >
                         <option value="">Select role</option>
-                        {roles.map((r) => (
-                          <option key={r.id} value={r.id}>{r.name}</option>
+                        {groupRoles(roles).map(({ key, label, roles: grp }) => (
+                          <optgroup key={key} label={`── ${label} ──`}>
+                            {grp.map((r) => (
+                              <option key={r.id} value={r.id}>{roleLabel(r)}</option>
+                            ))}
+                          </optgroup>
                         ))}
                       </select>
+                      <RoleHint roleId={sla.escalate_to_role} roles={roles} />
                     </div>
                     <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
                       <input

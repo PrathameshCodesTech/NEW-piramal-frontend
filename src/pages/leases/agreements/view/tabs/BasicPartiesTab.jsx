@@ -9,7 +9,7 @@ export default function BasicPartiesTab({
   setForm,
   tenantOptions,
   siteOptions,
-  contactOptions,
+  structureOptions,
   onSubmit,
   saving,
 }) {
@@ -34,6 +34,12 @@ export default function BasicPartiesTab({
             value={form.agreement_type}
             onChange={(e) => setForm((p) => ({ ...p, agreement_type: e.target.value }))}
             options={AGREEMENT_TYPE_OPTIONS}
+          />
+          <Select
+            label="Structure"
+            value={form.structure}
+            onChange={(e) => setForm((p) => ({ ...p, structure: e.target.value }))}
+            options={[{ value: "", label: "— Select Structure —" }, ...structureOptions]}
           />
           <Input
             label="Reference Code"
@@ -60,14 +66,8 @@ export default function BasicPartiesTab({
           <Select
             label="Tenant"
             value={form.tenant}
-            onChange={(e) => setForm((p) => ({ ...p, tenant: e.target.value, primary_contact: "" }))}
+            onChange={(e) => setForm((p) => ({ ...p, tenant: e.target.value }))}
             options={tenantOptions}
-          />
-          <Select
-            label="Primary Contact"
-            value={form.primary_contact}
-            onChange={(e) => setForm((p) => ({ ...p, primary_contact: e.target.value }))}
-            options={contactOptions}
           />
           <Select
             label="Site"

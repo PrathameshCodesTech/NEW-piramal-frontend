@@ -69,6 +69,10 @@ import LeaseLayout from "./pages/leases/LeaseLayout";
 import AgreementsListPage from "./pages/leases/agreements/AgreementsListPage";
 import AgreementCreatePage from "./pages/leases/agreements/AgreementCreatePage";
 import AgreementViewPage from "./pages/leases/agreements/AgreementViewPage";
+import AgreementStructuresListPage from "./pages/leases/agreement-structures/AgreementStructuresListPage";
+import AgreementStructureCreatePage from "./pages/leases/agreement-structures/AgreementStructureCreatePage";
+import AgreementStructureViewPage from "./pages/leases/agreement-structures/AgreementStructureViewPage";
+import AgreementStructureEditPage from "./pages/leases/agreement-structures/AgreementStructureEditPage";
 import EscalationTemplatesListPage from "./pages/leases/escalation-templates/EscalationTemplatesListPage";
 import EscalationTemplateCreatePage from "./pages/leases/escalation-templates/EscalationTemplateCreatePage";
 import EscalationTemplateViewPage from "./pages/leases/escalation-templates/EscalationTemplateViewPage";
@@ -195,6 +199,10 @@ export default function App() {
           <Route path="agreements" element={<AgreementsListPage />} />
           <Route path="agreements/create" element={<AgreementCreatePage />} />
           <Route path="agreements/:id" element={<AgreementViewPage />} />
+          <Route path="agreement-structures" element={<AgreementStructuresListPage />} />
+          <Route path="agreement-structures/create" element={<AgreementStructureCreatePage />} />
+          <Route path="agreement-structures/:id" element={<AgreementStructureViewPage />} />
+          <Route path="agreement-structures/:id/edit" element={<AgreementStructureEditPage />} />
           <Route path="escalation-templates" element={<EscalationTemplatesListPage />} />
           <Route path="escalation-templates/create" element={<EscalationTemplateCreatePage />} />
           <Route path="escalation-templates/:id" element={<EscalationTemplateViewPage />} />

@@ -40,7 +40,7 @@ export default function OrgCreatePage() {
     setLoading(true);
     try {
       await orgsAPI.create(form);
-      toast.success("Organization created");
+      toast.success("Organization created successfully. Default roles (Admin, Manager, Staff, Viewer) have been seeded for this scope.");
       navigate(`${basePath}/orgs`);
     } catch (err) {
       toast.error(err.message);

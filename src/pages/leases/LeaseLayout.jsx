@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import {
   agreementsAPI,
   escalationTemplatesAPI,
+  agreementStructuresAPI,
   leaseAmendmentsAPI,
   leaseLinkedDocumentsAPI,
 } from "../../services/api";
+import { LayoutList } from "lucide-react";
 
 const NAV_ITEMS = [
   {
@@ -15,6 +17,13 @@ const NAV_ITEMS = [
     label: "Agreements",
     icon: FileCheck,
     match: (path) => path.startsWith("/leases/agreements"),
+  },
+  {
+    key: "structures",
+    to: "/leases/agreement-structures",
+    label: "Agreement Structures",
+    icon: LayoutList,
+    match: (path) => path.startsWith("/leases/agreement-structures"),
   },
   {
     key: "escalations",
@@ -46,14 +55,16 @@ export default function LeaseLayout() {
   useEffect(() => {
     Promise.all([
       agreementsAPI.list().catch(() => []),
+      agreementStructuresAPI.list().catch(() => []),
       escalationTemplatesAPI.list().catch(() => []),
       leaseAmendmentsAPI.list().catch(() => []),
       leaseLinkedDocumentsAPI.list().catch(() => []),
     ])
-      .then(([agreements, templates, amendments, documents]) => {
+      .then(([agreements, structures, templates, amendments, documents]) => {
         const toCount = (x) => (Array.isArray(x) ? x.length : x?.count || (x?.results || []).length || 0);
         setStats({
           agreements: toCount(agreements),
+          structures: toCount(structures),
           templates: toCount(templates),
           amendments: toCount(amendments),
           documents: toCount(documents),
@@ -73,9 +84,10 @@ export default function LeaseLayout() {
 
       {/* Stats Widgets */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
           {[
             { label: "Agreements", value: stats.agreements, icon: FileCheck, bg: "bg-emerald-50", text: "text-emerald-600" },
+            { label: "Structures", value: stats.structures, icon: LayoutList, bg: "bg-teal-50", text: "text-teal-600" },
             { label: "Templates", value: stats.templates, icon: TrendingUp, bg: "bg-blue-50", text: "text-blue-600" },
             { label: "Amendments", value: stats.amendments, icon: History, bg: "bg-amber-50", text: "text-amber-600" },
             { label: "Documents", value: stats.documents, icon: FileText, bg: "bg-purple-50", text: "text-purple-600" },
