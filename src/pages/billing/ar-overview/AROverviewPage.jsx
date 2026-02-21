@@ -4,7 +4,7 @@ import { arSummariesAPI } from "../../../services/api";
 import PageHeader from "../../../components/ui/PageHeader";
 import Card from "../../../components/ui/Card";
 import EmptyState from "../../../components/ui/EmptyState";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, AlertTriangle } from "lucide-react";
 
 const fmt = (v) => Number(v || 0).toLocaleString("en-IN");
 
@@ -38,10 +38,24 @@ export default function AROverviewPage() {
   }
 
   const ageing = data.ageing || {};
+  const hasAgeingBuckets = ageing.current != null || ageing["30_60"] != null || ageing["60_90"] != null || ageing["90_plus"] != null;
 
   return (
     <div className="space-y-4">
       <PageHeader title="AR Overview" />
+
+      {!hasAgeingBuckets && (
+        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm">
+          <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-medium text-amber-800">Ageing buckets not configured</p>
+            <p className="text-amber-700 text-xs mt-0.5">
+              Invoices show no ageing bucket until you set up ageing rules.{" "}
+              <Link to="/billing/ar-settings" className="underline underline-offset-2 font-medium hover:text-amber-900">Set up Ageing Buckets →</Link>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Primary stats */}
       <Card className="p-6">
@@ -93,7 +107,7 @@ export default function AROverviewPage() {
       </Card>
 
       {/* Ageing buckets */}
-      {(ageing.current != null || ageing["30_60"] != null || ageing["60_90"] != null || ageing["90_plus"] != null) && (
+      {hasAgeingBuckets && (
         <Card className="p-6">
           <h3 className="text-sm font-semibold text-gray-700 mb-4">Ageing Breakdown</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

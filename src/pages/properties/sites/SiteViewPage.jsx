@@ -16,6 +16,7 @@ import {
   FileText,
   Sparkles,
   Package,
+  ExternalLink,
 } from "lucide-react";
 import { floorsAPI, sitesAPI, towersAPI, unitsAPI, siteAmenitiesAPI, unitAmenitiesAPI } from "../../../services/api";
 import Badge from "../../../components/ui/Badge";
@@ -359,12 +360,26 @@ export default function SiteViewPage() {
                   <Card key={floor.id} className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => selectFloor(floor.id)}>
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-sm font-semibold text-gray-800">Floor {floor.number}{floor.label ? ` - ${floor.label}` : ""}</h3>
-                      <ChevronRight className="w-4 h-4 text-gray-400" />
+                      <div className="flex items-center gap-1.5">
+                        {floor.status && (
+                          <Badge color={floor.status === "AVAILABLE" ? "emerald" : floor.status === "LEASED" ? "blue" : "amber"}>{floor.status}</Badge>
+                        )}
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="bg-gray-50 rounded-lg p-2"><p className="text-gray-500">Total Area</p><p className="font-semibold text-gray-800">{fmt(floor.total_area_sqft)} sqft</p></div>
                       <div className="bg-gray-50 rounded-lg p-2"><p className="text-gray-500">Leasable</p><p className="font-semibold text-gray-800">{fmt(floor.leasable_area_sqft)} sqft</p></div>
                     </div>
+                    {floor.status === "LEASED" && floor.current_lease_id && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); navigate(`/leases/agreements/${floor.current_lease_id}`); }}
+                        className="mt-2 flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        <ExternalLink className="w-3 h-3" /> View Lease
+                      </button>
+                    )}
                   </Card>
                 ))}
               </div>
@@ -448,6 +463,15 @@ export default function SiteViewPage() {
                       <div className="bg-gray-50 rounded-lg p-2"><p className="text-gray-500">Built-up</p><p className="font-semibold text-gray-800">{fmt(unit.builtup_area_sqft)} sqft</p></div>
                       <div className="bg-gray-50 rounded-lg p-2"><p className="text-gray-500">Leasable</p><p className="font-semibold text-gray-800">{fmt(unit.leasable_area_sqft)} sqft</p></div>
                     </div>
+                    {unit.status === "LEASED" && unit.current_lease_id && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); navigate(`/leases/agreements/${unit.current_lease_id}`); }}
+                        className="mt-2 flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        <ExternalLink className="w-3 h-3" /> View Lease
+                      </button>
+                    )}
                   </Card>
                 ))}
               </div>

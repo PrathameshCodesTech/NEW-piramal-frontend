@@ -1,4 +1,5 @@
-import { FileText, Users, Building2, StickyNote, Hash, Briefcase } from "lucide-react";
+import { FileText, Users, Building2, StickyNote, Hash, Briefcase, AlertCircle } from "lucide-react";
+import { Link } from "react-router-dom";
 import Button from "../../../../../components/ui/Button";
 import Input from "../../../../../components/ui/Input";
 import Select from "../../../../../components/ui/Select";
@@ -35,12 +36,23 @@ export default function BasicPartiesTab({
             onChange={(e) => setForm((p) => ({ ...p, agreement_type: e.target.value }))}
             options={AGREEMENT_TYPE_OPTIONS}
           />
-          <Select
-            label="Structure"
-            value={form.structure}
-            onChange={(e) => setForm((p) => ({ ...p, structure: e.target.value }))}
-            options={[{ value: "", label: "— Select Structure —" }, ...structureOptions]}
-          />
+          <div>
+            <Select
+              label="Structure"
+              value={form.structure}
+              onChange={(e) => setForm((p) => ({ ...p, structure: e.target.value }))}
+              options={[{ value: "", label: "— Select Structure —" }, ...(structureOptions ?? [])]}
+            />
+            {(structureOptions ?? []).length === 0 && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-amber-600">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                No structures found.{" "}
+                <Link to="/leases/agreement-structures/create" className="underline underline-offset-2 font-medium hover:text-amber-800">
+                  Create one →
+                </Link>
+              </p>
+            )}
+          </div>
           <Input
             label="Reference Code"
             icon={Briefcase}

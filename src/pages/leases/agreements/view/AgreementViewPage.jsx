@@ -10,6 +10,7 @@ import {
   leaseClauseConfigAPI,
   leaseNotesAPI,
   leaseDocumentsAPI,
+  leaseAmendmentsAPI,
   sitesAPI,
   tenantCompaniesAPI,
 } from "../../../../services/api";
@@ -33,6 +34,7 @@ import NotesTab from "./tabs/NotesTab";
 import DocumentsTab from "./tabs/DocumentsTab";
 import ReviewActionsTab from "./tabs/ReviewActionsTab";
 import TenantSetupTab from "./tabs/TenantSetupTab";
+import AmendmentsTab from "./tabs/AmendmentsTab";
 import Button from "../../../../components/ui/Button";
 import { CalendarPlus, FileText } from "lucide-react";
 
@@ -886,6 +888,10 @@ export default function AgreementViewPage() {
       )}
 
       {activeTab === 7 && (
+        <AmendmentsTab agreementId={id} />
+      )}
+
+      {activeTab === 8 && (
         <ReviewActionsTab
           data={data}
           updatingStatus={updatingStatus}
@@ -898,7 +904,7 @@ export default function AgreementViewPage() {
 
       <AgreementTabPager
         activeTab={activeTab}
-        totalTabs={8}
+        totalTabs={9}
         onBack={goBack}
         onNext={goNext}
       />

@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   RefreshCw, FileX, Building2, Shield, Gavel,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, BookOpen,
 } from "lucide-react";
 import Button from "../../../../../components/ui/Button";
 import Input from "../../../../../components/ui/Input";
@@ -151,6 +152,19 @@ export default function ClauseConfigTab({ loading, form, setForm, onSubmit, savi
 
   return (
     <form onSubmit={onSubmit} className="space-y-4 max-w-3xl">
+
+      {/* Clause Library hint */}
+      <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm">
+        <BookOpen className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+        <div>
+          <p className="font-medium text-blue-800">Legal clauses are configured here, not in the Clause Library</p>
+          <p className="text-blue-700 text-xs mt-0.5">
+            This tab stores termination, renewal, sub-letting, exclusivity, insurance, and dispute terms specific to this lease.
+            To manage reusable clause templates (e.g. standard NDA, penalty clauses), visit the{" "}
+            <Link to="/clauses" className="underline underline-offset-2 font-medium hover:text-blue-900">Clause Library →</Link>
+          </p>
+        </div>
+      </div>
 
       {/* ── 1. Termination ── */}
       <SectionCard icon={FileX} title="Termination & Early Exit" color="red">

@@ -508,7 +508,16 @@ export default function RentSchedulesPage() {
                     ))}
                   </select>
                   {invoices.length === 0 && (
-                    <p className="text-xs text-amber-600 mt-1">No invoices found. Create an invoice first.</p>
+                    <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between gap-3">
+                      <p className="text-xs text-amber-700">No invoices found for this scope. Create one first, then link it here.</p>
+                      <button
+                        type="button"
+                        onClick={() => { setShowMarkInvoicedModal(false); navigate("/billing/invoices/create"); }}
+                        className="shrink-0 text-xs font-medium text-emerald-700 hover:text-emerald-900 underline underline-offset-2"
+                      >
+                        Create Invoice →
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

@@ -6,6 +6,7 @@ export const AGREEMENT_TABS = [
   "Legal / Clause Config",
   "Notes",
   "Documents",
+  "Amendments",
   "Review + Actions",
 ];
 
