@@ -66,6 +66,7 @@ import ClauseUsagesListWithCreateModal from "./pages/clauses/usages/ClauseUsages
 
 // Lease pages
 import LeaseLayout from "./pages/leases/LeaseLayout";
+import LeaseOpsLayout from "./pages/leases/LeaseOpsLayout";
 import AgreementsListPage from "./pages/leases/agreements/AgreementsListPage";
 import AgreementCreatePage from "./pages/leases/agreements/AgreementCreatePage";
 import AgreementViewPage from "./pages/leases/agreements/AgreementViewPage";
@@ -86,6 +87,7 @@ import LeaseDocumentViewPage from "./pages/leases/documents/LeaseDocumentViewPag
 
 // Billing pages
 import BillingLayout from "./pages/billing/BillingLayout";
+import BillingCollectionsLayout from "./pages/billing/BillingCollectionsLayout";
 import SiteConfigListPage from "./pages/billing/site-config/SiteConfigListPage";
 import SiteConfigViewPage from "./pages/billing/site-config/SiteConfigViewPage";
 import SiteConfigCreatePage from "./pages/billing/site-config/SiteConfigCreatePage";
@@ -96,7 +98,6 @@ import BillingRuleEditPage from "./pages/billing/rules/BillingRuleEditPage";
 import InvoiceSchedulesListWithCreateModal from "./pages/billing/schedules/InvoiceSchedulesListWithCreateModal";
 import InvoiceScheduleEditPage from "./pages/billing/schedules/InvoiceScheduleEditPage";
 import InvoiceScheduleViewPage from "./pages/billing/schedules/InvoiceScheduleViewPage";
-import InvoicesListWithCreateModal from "./pages/billing/invoices/InvoicesListWithCreateModal";
 import PaymentsListWithCreateModal from "./pages/billing/collections/PaymentsListWithCreateModal";
 import PaymentViewPage from "./pages/billing/collections/PaymentViewPage";
 import CreditNotesListWithCreateModal from "./pages/billing/collections/CreditNotesListWithCreateModal";
@@ -165,7 +166,7 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        {/* Tenant routes */}
+        {/* Dashboard */}
         <Route index element={<DashboardPage />} />
 
         {/* Tenant routes */}
@@ -193,80 +194,97 @@ export default function App() {
           <Route path="usages/create" element={<ClauseUsagesListWithCreateModal />} />
         </Route>
 
-        {/* Lease routes */}
-        <Route path="leases" element={<LeaseLayout />}>
-          <Route index element={<Navigate to="/leases/agreements" replace />} />
-          <Route path="agreements" element={<AgreementsListPage />} />
-          <Route path="agreements/create" element={<AgreementCreatePage />} />
-          <Route path="agreements/:id" element={<AgreementViewPage />} />
-          <Route path="agreement-structures" element={<AgreementStructuresListPage />} />
-          <Route path="agreement-structures/create" element={<AgreementStructureCreatePage />} />
-          <Route path="agreement-structures/:id" element={<AgreementStructureViewPage />} />
-          <Route path="agreement-structures/:id/edit" element={<AgreementStructureEditPage />} />
-          <Route path="escalation-templates" element={<EscalationTemplatesListPage />} />
-          <Route path="escalation-templates/create" element={<EscalationTemplateCreatePage />} />
-          <Route path="escalation-templates/:id" element={<EscalationTemplateViewPage />} />
-          <Route path="escalation-templates/:id/edit" element={<EscalationTemplateEditPage />} />
-          <Route path="amendments" element={<AmendmentsListPage />} />
-          <Route path="amendments/create" element={<AmendmentCreatePage />} />
-          <Route path="amendments/:id" element={<AmendmentViewPage />} />
-          <Route path="documents" element={<LeaseDocumentsListPage />} />
-          <Route path="documents/create" element={<LeaseDocumentCreatePage />} />
-          <Route path="documents/:id" element={<LeaseDocumentViewPage />} />
+        {/* Lease routes — split by section */}
+        <Route path="leases">
+          {/* Lease Operations: agreements, amendments, documents */}
+          <Route element={<LeaseOpsLayout />}>
+            <Route index element={<Navigate to="/leases/agreements" replace />} />
+            <Route path="agreements" element={<AgreementsListPage />} />
+            <Route path="agreements/create" element={<AgreementCreatePage />} />
+            <Route path="agreements/:id" element={<AgreementViewPage />} />
+            <Route path="amendments" element={<AmendmentsListPage />} />
+            <Route path="amendments/create" element={<AmendmentCreatePage />} />
+            <Route path="amendments/:id" element={<AmendmentViewPage />} />
+            <Route path="documents" element={<LeaseDocumentsListPage />} />
+            <Route path="documents/create" element={<LeaseDocumentCreatePage />} />
+            <Route path="documents/:id" element={<LeaseDocumentViewPage />} />
+          </Route>
+          {/* Lease Configuration: agreement structures, escalation templates */}
+          <Route element={<LeaseLayout />}>
+            <Route path="agreement-structures" element={<AgreementStructuresListPage />} />
+            <Route path="agreement-structures/create" element={<AgreementStructureCreatePage />} />
+            <Route path="agreement-structures/:id" element={<AgreementStructureViewPage />} />
+            <Route path="agreement-structures/:id/edit" element={<AgreementStructureEditPage />} />
+            <Route path="escalation-templates" element={<EscalationTemplatesListPage />} />
+            <Route path="escalation-templates/create" element={<EscalationTemplateCreatePage />} />
+            <Route path="escalation-templates/:id" element={<EscalationTemplateViewPage />} />
+            <Route path="escalation-templates/:id/edit" element={<EscalationTemplateEditPage />} />
+          </Route>
         </Route>
 
-        {/* Rent Schedule & Revenue Recognition */}
-        <Route path="rent-schedule-revenue" element={<RentScheduleRevenueLayout />}>
-          <Route index element={<Navigate to="/rent-schedule-revenue/rent-schedules" replace />} />
-          <Route path="rent-schedules" element={<RentSchedulesPage />} />
-          <Route path="rent-schedules/:id" element={<RentScheduleDetailPage />} />
+        {/* Rent Schedule & Reporting routes — split by section */}
+        <Route path="rent-schedule-revenue">
+          {/* Reporting & Analytics: rent schedules, receivables, revenue recognition */}
+          <Route element={<RentScheduleRevenueLayout />}>
+            <Route index element={<Navigate to="/rent-schedule-revenue/rent-schedules" replace />} />
+            <Route path="rent-schedules" element={<RentSchedulesPage />} />
+            <Route path="rent-schedules/:id" element={<RentScheduleDetailPage />} />
+            <Route path="receivables" element={<ReceivablesPage />} />
+            <Route path="revenue-recognition" element={<RevenueRecognitionPage />} />
+          </Route>
+          {/* Invoice routes — standalone, no sub-layout */}
           <Route path="invoice" element={<InvoicePage />} />
           <Route path="invoice/create" element={<InvoiceCreatePage />} />
           <Route path="invoice/:id" element={<InvoiceViewPage />} />
           <Route path="invoice/:id/edit" element={<InvoiceEditPage />} />
-          <Route path="receivables" element={<ReceivablesPage />} />
-          <Route path="revenue-recognition" element={<RevenueRecognitionPage />} />
         </Route>
 
-        {/* Billing routes */}
-        <Route path="billing" element={<BillingLayout />}>
-          <Route index element={<Navigate to="/billing/site-config" replace />} />
-          <Route path="site-config" element={<SiteConfigListPage />} />
-          <Route path="site-config/:siteId" element={<SiteConfigViewPage />} />
-          <Route path="site-config/create" element={<SiteConfigCreatePage />} />
-          <Route path="site-config/:siteId/edit" element={<SiteConfigEditPage />} />
-          <Route path="rules" element={<BillingRulesListWithCreateModal />} />
-          <Route path="rules/create" element={<BillingRulesListWithCreateModal />} />
-          <Route path="rules/:id" element={<BillingRuleViewPage />} />
-          <Route path="rules/:id/edit" element={<BillingRuleEditPage />} />
-          <Route path="schedules" element={<InvoiceSchedulesListWithCreateModal />} />
-          <Route path="schedules/create" element={<InvoiceSchedulesListWithCreateModal />} />
-          <Route path="schedules/:id/edit" element={<InvoiceScheduleEditPage />} />
-          <Route path="schedules/:id" element={<InvoiceScheduleViewPage />} />
+        {/* Billing routes — split by section */}
+        <Route path="billing">
+          {/* Billing Configuration: rules, credit rules, dispute rules, lease rules, site config, ageing */}
+          <Route element={<BillingLayout />}>
+            <Route index element={<Navigate to="/billing/rules" replace />} />
+            <Route path="site-config" element={<SiteConfigListPage />} />
+            <Route path="site-config/:siteId" element={<SiteConfigViewPage />} />
+            <Route path="site-config/create" element={<SiteConfigCreatePage />} />
+            <Route path="site-config/:siteId/edit" element={<SiteConfigEditPage />} />
+            <Route path="rules" element={<BillingRulesListWithCreateModal />} />
+            <Route path="rules/create" element={<BillingRulesListWithCreateModal />} />
+            <Route path="rules/:id" element={<BillingRuleViewPage />} />
+            <Route path="rules/:id/edit" element={<BillingRuleEditPage />} />
+            <Route path="credit-rules" element={<CreditRulesListWithCreateModal />} />
+            <Route path="credit-rules/create" element={<CreditRulesListWithCreateModal />} />
+            <Route path="credit-rules/:id/edit" element={<CreditRuleEditPage />} />
+            <Route path="credit-rules/:id" element={<CreditRuleViewPage />} />
+            <Route path="dispute-rules" element={<DisputeRulesListWithCreateModal />} />
+            <Route path="dispute-rules/create" element={<DisputeRulesListWithCreateModal />} />
+            <Route path="dispute-rules/:id/edit" element={<DisputeRuleEditPage />} />
+            <Route path="dispute-rules/:id" element={<DisputeRuleViewPage />} />
+            <Route path="ageing" element={<AgeingSetupPage />} />
+            <Route path="ageing/config" element={<AgeingSetupPage />} />
+            <Route path="lease-rules" element={<LeaseARRulesPage />} />
+            <Route path="lease-rules/:agreementId/edit" element={<LeaseARRulesEditPage />} />
+          </Route>
+          {/* Billing Collections: invoice schedules, ar overview, payments, credit notes, ar settings */}
+          <Route element={<BillingCollectionsLayout />}>
+            <Route path="schedules" element={<InvoiceSchedulesListWithCreateModal />} />
+            <Route path="schedules/create" element={<InvoiceSchedulesListWithCreateModal />} />
+            <Route path="schedules/:id/edit" element={<InvoiceScheduleEditPage />} />
+            <Route path="schedules/:id" element={<InvoiceScheduleViewPage />} />
+            <Route path="ar-overview" element={<AROverviewPage />} />
+            <Route path="collections/payments" element={<PaymentsListWithCreateModal />} />
+            <Route path="collections/payments/create" element={<PaymentsListWithCreateModal />} />
+            <Route path="collections/payments/:id" element={<PaymentViewPage />} />
+            <Route path="collections/credit-notes" element={<CreditNotesListWithCreateModal />} />
+            <Route path="collections/credit-notes/create" element={<CreditNotesListWithCreateModal />} />
+            <Route path="collections/credit-notes/:id" element={<CreditNoteViewPage />} />
+            <Route path="ar-settings" element={<ARSettingsPage />} />
+          </Route>
+          {/* Legacy invoice redirects */}
           <Route path="invoices" element={<Navigate to="/rent-schedule-revenue/invoice" replace />} />
           <Route path="invoices/create" element={<Navigate to="/rent-schedule-revenue/invoice/create" replace />} />
           <Route path="invoices/:id/edit" element={<BillingInvoiceRedirect edit />} />
           <Route path="invoices/:id" element={<BillingInvoiceRedirect />} />
-          <Route path="ar-overview" element={<AROverviewPage />} />
-          <Route path="collections/payments" element={<PaymentsListWithCreateModal />} />
-          <Route path="collections/payments/create" element={<PaymentsListWithCreateModal />} />
-          <Route path="collections/payments/:id" element={<PaymentViewPage />} />
-          <Route path="collections/credit-notes" element={<CreditNotesListWithCreateModal />} />
-          <Route path="collections/credit-notes/create" element={<CreditNotesListWithCreateModal />} />
-          <Route path="collections/credit-notes/:id" element={<CreditNoteViewPage />} />
-          <Route path="dispute-rules" element={<DisputeRulesListWithCreateModal />} />
-          <Route path="dispute-rules/create" element={<DisputeRulesListWithCreateModal />} />
-          <Route path="dispute-rules/:id/edit" element={<DisputeRuleEditPage />} />
-          <Route path="dispute-rules/:id" element={<DisputeRuleViewPage />} />
-          <Route path="credit-rules" element={<CreditRulesListWithCreateModal />} />
-          <Route path="credit-rules/create" element={<CreditRulesListWithCreateModal />} />
-          <Route path="credit-rules/:id/edit" element={<CreditRuleEditPage />} />
-          <Route path="credit-rules/:id" element={<CreditRuleViewPage />} />
-          <Route path="ageing" element={<AgeingSetupPage />} />
-          <Route path="ageing/config" element={<AgeingSetupPage />} />
-          <Route path="ar-settings" element={<ARSettingsPage />} />
-          <Route path="lease-rules" element={<LeaseARRulesPage />} />
-          <Route path="lease-rules/:agreementId/edit" element={<LeaseARRulesEditPage />} />
         </Route>
 
         {/* Property routes */}
@@ -325,7 +343,7 @@ export default function App() {
           <Route path="create" element={<MembershipCreatePage />} />
         </Route>
 
-        {/* Scope Org Structure - same hierarchy filtering as properties (org/company/entity admin) */}
+        {/* Scope Org Structure */}
         <Route path="org-structure" element={<OrgStructureLayout />}>
           <Route index element={<Navigate to="/org-structure/orgs" replace />} />
           <Route path="orgs" element={<OrgListPage />} />
@@ -348,7 +366,7 @@ export default function App() {
           <Route path="rules" element={<ApprovalRulesPage />} />
         </Route>
 
-        {/* Scope User Management - same UI, scope-filtered (org/company/entity admin) */}
+        {/* Scope User Management */}
         <Route path="user-management" element={<UserManagementLayout />}>
           <Route index element={<Navigate to="/user-management/users" replace />} />
           <Route path="users" element={<UserListPage />} />
