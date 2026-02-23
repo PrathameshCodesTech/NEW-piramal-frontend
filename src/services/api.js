@@ -553,6 +553,49 @@ export const agreementsAPI = {
   activate: (id) => apiRequest(`/api/v1/leases/agreements/${id}/activate/`, { method: "POST" }),
   terminate: (id) => apiRequest(`/api/v1/leases/agreements/${id}/terminate/`, { method: "POST" }),
   byTenant: (tenantId) => apiRequest(`/api/v1/leases/agreements/by-tenant/?tenant_id=${tenantId}`),
+  generatePdf: (id, sectionId) => {
+    const scopeId = getActiveScopeId();
+    const qs = sectionId ? `?section=${sectionId}` : "";
+    return fetch(`${BASE_URL}/api/v1/leases/agreements/${id}/generate-pdf/${qs}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        ...(scopeId && { "X-Scope-ID": scopeId }),
+      },
+    }).then(async (r) => {
+      if (!r.ok) {
+        const text = await r.text();
+        // Try to parse as JSON, fallback to text
+        try {
+          const d = JSON.parse(text);
+          return Promise.reject(new Error(d.detail || d.error || "PDF generation failed"));
+        } catch {
+          return Promise.reject(new Error(`PDF generation failed: ${r.status} ${r.statusText}`));
+        }
+      }
+      return r.blob();
+    });
+  },
+  previewHtml: (id, sectionId) => {
+    const scopeId = getActiveScopeId();
+    const qs = sectionId ? `?section=${sectionId}` : "";
+    return fetch(`${BASE_URL}/api/v1/leases/agreements/${id}/preview-html/${qs}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        ...(scopeId && { "X-Scope-ID": scopeId }),
+      },
+    }).then(async (r) => {
+      if (!r.ok) {
+        const text = await r.text();
+        try {
+          const d = JSON.parse(text);
+          return Promise.reject(new Error(d.detail || d.error || "Preview failed"));
+        } catch {
+          return Promise.reject(new Error(`Preview failed: ${r.status} ${r.statusText}`));
+        }
+      }
+      return r.text();
+    });
+  },
 };
 
 export const allocationsAPI = {

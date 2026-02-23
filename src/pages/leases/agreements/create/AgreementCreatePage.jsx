@@ -11,6 +11,7 @@ import {
   leaseDocumentsAPI,
   sitesAPI,
   tenantCompaniesAPI,
+  agreementStructuresAPI,
 } from "../../../../services/api";
 import PageHeader from "../../../../components/ui/PageHeader";
 import Button from "../../../../components/ui/Button";
@@ -38,6 +39,7 @@ import ReviewActionsTab from "../view/tabs/ReviewActionsTab";
 const initialBasicForm = {
   lease_id: "",
   agreement_type: "OFFICE",
+  structure: "",
   tenant: "",
   site: "",
   landlord_entity: "",
@@ -107,6 +109,7 @@ export default function AgreementCreatePage() {
   const [tenants, setTenants] = useState([]);
   const [sites, setSites] = useState([]);
   const [templates, setTemplates] = useState([]);
+  const [structures, setStructures] = useState([]);
 
   const [basicForm, setBasicForm] = useState(initialBasicForm);
   const [financialForm, setFinancialForm] = useState(initialFinancialForm);
@@ -223,6 +226,10 @@ export default function AgreementCreatePage() {
       .list({ status: "ACTIVE" })
       .then((r) => setTemplates(r?.results || r || []))
       .catch(() => setTemplates([]));
+    agreementStructuresAPI
+      .list()
+      .then((r) => setStructures(r?.results || r || []))
+      .catch(() => setStructures([]));
   }, []);
 
   useEffect(() => {
@@ -296,6 +303,7 @@ export default function AgreementCreatePage() {
     setBasicForm({
       lease_id: agreement.lease_id || "",
       agreement_type: agreement.agreement_type || "OFFICE",
+      structure: agreement.structure ? String(agreement.structure) : "",
       tenant: agreement.tenant ? String(agreement.tenant) : "",
       site: agreement.site ? String(agreement.site) : "",
       landlord_entity: agreement.landlord_entity || "",
@@ -487,6 +495,7 @@ export default function AgreementCreatePage() {
       const payload = {
         lease_id: basicForm.lease_id,
         agreement_type: basicForm.agreement_type,
+        structure: basicForm.structure ? parseInt(basicForm.structure, 10) : null,
         tenant: basicForm.tenant ? parseInt(basicForm.tenant, 10) : null,
         primary_contact: null,
         site: basicForm.site ? parseInt(basicForm.site, 10) : null,
@@ -745,6 +754,7 @@ export default function AgreementCreatePage() {
   const tenantOptions = tenants.map((t) => ({ value: String(t.id), label: t.legal_name || `Tenant ${t.id}` }));
   const siteOptions = sites.map((s) => ({ value: String(s.id), label: s.name || s.code || `Site ${s.id}` }));
   const templateOptions = templates.map((t) => ({ value: String(t.id), label: t.name }));
+  const structureOptions = structures.map((s) => ({ value: String(s.id), label: s.name }));
   const totalAllocatedAreaFromData = toNumberOrNull(data?.total_allocated_area);
   const totalAllocatedAreaFromAllocations = allocations.reduce(
     (sum, alloc) => sum + (toNumberOrNull(alloc.allocated_area_sqft) || 0),
@@ -825,6 +835,7 @@ export default function AgreementCreatePage() {
               setForm={setBasicForm}
               tenantOptions={tenantOptions}
               siteOptions={siteOptions}
+              structureOptions={structureOptions}
               onSubmit={handleSubmit}
               saving={savingBasic}
             />
