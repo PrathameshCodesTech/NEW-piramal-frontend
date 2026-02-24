@@ -98,17 +98,38 @@ export default function BillingRuleViewPage() {
           </div>
         }
       />
-      <Card className="p-6 max-w-2xl">
-        <dl className="grid grid-cols-2 gap-4 text-sm">
-          <div><dt className="text-gray-500">Rule ID</dt><dd>{data.rule_id}</dd></div>
-          <div><dt className="text-gray-500">Name</dt><dd>{data.name}</dd></div>
-          <div><dt className="text-gray-500">Category</dt><dd>{data.category}</dd></div>
-          <div><dt className="text-gray-500">Applies To</dt><dd>{data.applies_to}</dd></div>
-          <div><dt className="text-gray-500">Status</dt><dd><Badge color={data.status === "ACTIVE" ? "emerald" : "gray"}>{data.status}</Badge></dd></div>
-          {data.description && (
-            <div className="col-span-2"><dt className="text-gray-500">Description</dt><dd>{data.description}</dd></div>
-          )}
-        </dl>
+      <Card className="p-6 max-w-2xl space-y-5">
+        <div>
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Identification</p>
+          <dl className="grid grid-cols-2 gap-4 text-sm">
+            <div><dt className="text-gray-500">Rule ID</dt><dd>{data.rule_id}</dd></div>
+            <div><dt className="text-gray-500">Status</dt><dd><Badge color={data.status === "ACTIVE" ? "emerald" : "gray"}>{data.status}</Badge></dd></div>
+            <div><dt className="text-gray-500">Category</dt><dd>{data.category}</dd></div>
+            <div><dt className="text-gray-500">Applies To</dt><dd>{data.applies_to}</dd></div>
+            {data.description && <div className="col-span-2"><dt className="text-gray-500">Description</dt><dd>{data.description}</dd></div>}
+          </dl>
+        </div>
+
+        <div className="border-t pt-4">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Charge</p>
+          <dl className="grid grid-cols-2 gap-4 text-sm">
+            <div><dt className="text-gray-500">Charge Type</dt><dd>{data.charge_type?.replace(/_/g, " ")}</dd></div>
+            <div><dt className="text-gray-500">Calculation</dt><dd>{data.calculation_method?.replace(/_/g, " ")}</dd></div>
+            {data.amount != null && <div><dt className="text-gray-500">Amount</dt><dd>₹{data.amount}</dd></div>}
+            {data.rate != null && <div><dt className="text-gray-500">Rate</dt><dd>{data.rate}%</dd></div>}
+            <div><dt className="text-gray-500">Max Cap</dt><dd>{data.max_cap_amount ? `₹${data.max_cap_amount}` : <span className="text-gray-400">No cap</span>}</dd></div>
+          </dl>
+        </div>
+
+        <div className="border-t pt-4">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Trigger</p>
+          <dl className="grid grid-cols-2 gap-4 text-sm">
+            <div><dt className="text-gray-500">Trigger Event</dt><dd>{data.trigger_event?.replace(/_/g, " ")}</dd></div>
+            <div><dt className="text-gray-500">Grace Period</dt><dd>{data.grace_period_days ?? 0} days</dd></div>
+            <div><dt className="text-gray-500">Trigger Mode</dt><dd>{data.trigger_mode}</dd></div>
+            {data.gl_code && <div><dt className="text-gray-500">GL Code</dt><dd className="font-mono text-xs">{data.gl_code}</dd></div>}
+          </dl>
+        </div>
       </Card>
       <ConfirmDialog open={showDelete} onClose={() => setShowDelete(false)} onConfirm={handleDelete} title="Delete Rule" message={`Delete "${data.name}"?`} loading={deleting} />
     </div>

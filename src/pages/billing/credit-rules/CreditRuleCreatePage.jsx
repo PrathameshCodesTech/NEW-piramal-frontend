@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { creditRulesAPI } from "../../../services/api";
+import { creditRulesAPI, rolesAPI } from "../../../services/api";
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import Input from "../../../components/ui/Input";
@@ -14,14 +14,6 @@ const TRIGGER_OPTIONS = [
   { value: "GOODWILL", label: "Goodwill" },
   { value: "DISCOUNT_REQUEST", label: "Approved Discount Request" },
   { value: "RETURN_REQUEST", label: "Validated Return Request" },
-];
-const APPROVAL_OPTIONS = [
-  { value: "AR_EXECUTIVE", label: "AR Executive" },
-  { value: "AR_SUPERVISOR", label: "AR Supervisor" },
-  { value: "AR_MANAGER", label: "AR Manager" },
-  { value: "OPERATIONS_MANAGER", label: "Operations Manager" },
-  { value: "FINANCE_HEAD", label: "Finance Head" },
-  { value: "CFO", label: "CFO" },
 ];
 const VARIANCE_BASIS_OPTIONS = [
   { value: "PERCENTAGE", label: "Percentage (%)" },
@@ -42,6 +34,7 @@ const Chk = ({ label, checked, onChange }) => (
 export default function CreditRuleCreatePage({ inModal = false }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [roles, setRoles] = useState([]);
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -49,12 +42,20 @@ export default function CreditRuleCreatePage({ inModal = false }) {
     variance_basis: "PERCENTAGE",
     variance_threshold: "",
     max_credit_amount: "",
-    approval_level: "AR_SUPERVISOR",
+    approval_role: "",
     auto_approve: false,
     auto_post_to_gl: false,
     requires_documentation: false,
     status: "ACTIVE",
+    trigger_mode: "MANUAL",
   });
+
+  useEffect(() => {
+    rolesAPI.list().then((res) => {
+      const list = res?.results || res || [];
+      setRoles(list.map((r) => ({ value: String(r.id), label: r.name })));
+    }).catch(() => {});
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -65,11 +66,12 @@ export default function CreditRuleCreatePage({ inModal = false }) {
         description: form.description,
         trigger_type: form.trigger_type,
         variance_basis: form.variance_basis,
-        approval_level: form.approval_level,
+        approval_role: form.approval_role || null,
         auto_approve: form.auto_approve,
         auto_post_to_gl: form.auto_post_to_gl,
         requires_documentation: form.requires_documentation,
         status: form.status,
+        trigger_mode: form.trigger_mode,
       };
       if (form.variance_threshold) payload.variance_threshold = parseFloat(form.variance_threshold);
       if (form.max_credit_amount) payload.max_credit_amount = parseFloat(form.max_credit_amount);
@@ -113,7 +115,12 @@ export default function CreditRuleCreatePage({ inModal = false }) {
           <div className="border-t pt-4">
             <p className="text-xs font-medium text-gray-500 mb-3">Approval</p>
             <div className="space-y-3">
-              <Select label="Approval Level" value={form.approval_level} onChange={set("approval_level")} options={APPROVAL_OPTIONS} />
+              <Select
+                label="Approval Role"
+                value={form.approval_role}
+                onChange={set("approval_role")}
+                options={[{ value: "", label: "— None (auto-approve or no routing) —" }, ...roles]}
+              />
               <Chk label="Auto-approve (no manual approval needed)" checked={form.auto_approve} onChange={set("auto_approve")} />
             </div>
           </div>
@@ -128,6 +135,23 @@ export default function CreditRuleCreatePage({ inModal = false }) {
 
           <div className="border-t pt-4">
             <Select label="Status" value={form.status} onChange={set("status")} options={STATUS_OPTIONS} />
+          </div>
+          <div className="border-t pt-4">
+            <p className="text-xs font-medium text-gray-500 mb-3">Trigger Mode</p>
+            <div className="space-y-2">
+              {[
+                { value: "MANUAL", label: "Manual", hint: "Creates an alert — you review and apply it" },
+                { value: "AUTO", label: "Auto", hint: "Fires immediately when condition is met" },
+              ].map((opt) => (
+                <label key={opt.value} className="flex items-start gap-2 cursor-pointer">
+                  <input type="radio" name="trigger_mode" value={opt.value} checked={form.trigger_mode === opt.value} onChange={set("trigger_mode")} className="mt-0.5" />
+                  <span className="text-sm">
+                    <span className="font-medium">{opt.label}</span>
+                    <span className="block text-xs text-gray-400">{opt.hint}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
         <div className="flex gap-2 pt-6">

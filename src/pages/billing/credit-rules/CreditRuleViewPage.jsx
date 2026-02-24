@@ -56,7 +56,7 @@ export default function CreditRuleViewPage() {
           <div><dt className="text-gray-500">Name</dt><dd>{data.name}</dd></div>
           <div><dt className="text-gray-500">Status</dt><dd><Badge color={data.status === "ACTIVE" ? "emerald" : "gray"}>{data.status}</Badge></dd></div>
           <div><dt className="text-gray-500">Trigger</dt><dd>{data.trigger_display}</dd></div>
-          <div><dt className="text-gray-500">Approval Level</dt><dd>{data.approval_level}</dd></div>
+          <div><dt className="text-gray-500">Approval Role</dt><dd>{data.approval_role_name || <span className="text-gray-400">— none —</span>}</dd></div>
           <div><dt className="text-gray-500">Auto Approve</dt><dd>{data.auto_approve ? "Yes" : "No"}</dd></div>
           {data.description && <div className="col-span-2"><dt className="text-gray-500">Description</dt><dd>{data.description}</dd></div>}
         </dl>

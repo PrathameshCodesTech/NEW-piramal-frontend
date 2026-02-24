@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { Settings, FileText, AlertCircle, Gift, Clock, FileSignature } from "lucide-react";
+import { Settings, FileText, AlertCircle, Gift, Clock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { billingRulesAPI, creditRulesAPI, disputeRulesAPI } from "../../services/api";
 
@@ -24,13 +24,6 @@ const NAV_ITEMS = [
     label: "Dispute Rules",
     icon: AlertCircle,
     match: (path) => path.startsWith("/billing/dispute-rules"),
-  },
-  {
-    key: "lease-rules",
-    to: "/billing/lease-rules",
-    label: "Lease AR Rules",
-    icon: FileSignature,
-    match: (path) => path.startsWith("/billing/lease-rules"),
   },
   {
     key: "site-config",

@@ -81,6 +81,7 @@ export default function DisputeRuleEditPage() {
           flag_customer: !!data.flag_customer,
           priority: data.priority != null ? String(data.priority) : "",
           status: data.status || "ACTIVE",
+          trigger_mode: data.trigger_mode || "MANUAL",
         });
       })
       .catch(() => toast.error("Rule not found"))
@@ -106,6 +107,7 @@ export default function DisputeRuleEditPage() {
         require_approval: form.require_approval,
         flag_customer: form.flag_customer,
         status: form.status,
+        trigger_mode: form.trigger_mode,
       };
       if (form.time_window_days) payload.time_window_days = parseInt(form.time_window_days, 10);
       if (form.priority) payload.priority = parseInt(form.priority, 10);
@@ -173,6 +175,23 @@ export default function DisputeRuleEditPage() {
 
             <div className="border-t pt-4">
               <Select label="Status" value={form.status} onChange={set("status")} options={STATUS_OPTIONS} />
+            </div>
+            <div className="border-t pt-4">
+              <p className="text-xs font-medium text-gray-500 mb-3">Trigger Mode</p>
+              <div className="space-y-2">
+                {[
+                  { value: "MANUAL", label: "Manual", hint: "Creates an alert — you review and apply it" },
+                  { value: "AUTO", label: "Auto", hint: "Fires immediately when condition is met" },
+                ].map((opt) => (
+                  <label key={opt.value} className="flex items-start gap-2 cursor-pointer">
+                    <input type="radio" name="trigger_mode" value={opt.value} checked={form.trigger_mode === opt.value} onChange={set("trigger_mode")} className="mt-0.5" />
+                    <span className="text-sm">
+                      <span className="font-medium">{opt.label}</span>
+                      <span className="block text-xs text-gray-400">{opt.hint}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
           <div className="flex gap-2 pt-6">

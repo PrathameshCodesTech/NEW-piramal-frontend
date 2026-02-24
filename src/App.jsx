@@ -111,8 +111,7 @@ import CreditRuleViewPage from "./pages/billing/credit-rules/CreditRuleViewPage"
 import CreditRuleEditPage from "./pages/billing/credit-rules/CreditRuleEditPage";
 import AgeingSetupPage from "./pages/billing/ageing/AgeingSetupPage";
 import ARSettingsPage from "./pages/billing/ar-settings/ARSettingsPage";
-import LeaseARRulesPage from "./pages/billing/lease-rules/LeaseARRulesPage";
-import LeaseARRulesEditPage from "./pages/billing/lease-rules/LeaseARRulesEditPage";
+import PendingActionsPage from "./pages/billing/pending-actions/PendingActionsPage";
 
 // Rent Schedule & Revenue Recognition
 import RentScheduleRevenueLayout from "./pages/rent-schedule-revenue/RentScheduleRevenueLayout";
@@ -125,9 +124,9 @@ import InvoiceEditPage from "./pages/rent-schedule-revenue/InvoiceEditPage";
 import ReceivablesPage from "./pages/rent-schedule-revenue/ReceivablesPage";
 import RevenueRecognitionPage from "./pages/rent-schedule-revenue/RevenueRecognitionPage";
 
-function BillingInvoiceRedirect({ edit }) {
+function RentScheduleInvoiceRedirect({ edit }) {
   const { id } = useParams();
-  const to = edit ? `/rent-schedule-revenue/invoice/${id}/edit` : `/rent-schedule-revenue/invoice/${id}`;
+  const to = edit ? `/billing/invoices/${id}/edit` : `/billing/invoices/${id}`;
   return <Navigate to={to} replace />;
 }
 
@@ -232,11 +231,11 @@ export default function App() {
             <Route path="receivables" element={<ReceivablesPage />} />
             <Route path="revenue-recognition" element={<RevenueRecognitionPage />} />
           </Route>
-          {/* Invoice routes — standalone, no sub-layout */}
-          <Route path="invoice" element={<InvoicePage />} />
-          <Route path="invoice/create" element={<InvoiceCreatePage />} />
-          <Route path="invoice/:id" element={<InvoiceViewPage />} />
-          <Route path="invoice/:id/edit" element={<InvoiceEditPage />} />
+          {/* Invoice routes moved to /billing/invoices — redirect for backward compat */}
+          <Route path="invoice" element={<Navigate to="/billing/invoices" replace />} />
+          <Route path="invoice/create" element={<Navigate to="/billing/invoices/create" replace />} />
+          <Route path="invoice/:id" element={<RentScheduleInvoiceRedirect />} />
+          <Route path="invoice/:id/edit" element={<RentScheduleInvoiceRedirect edit />} />
         </Route>
 
         {/* Billing routes — split by section */}
@@ -262,11 +261,13 @@ export default function App() {
             <Route path="dispute-rules/:id" element={<DisputeRuleViewPage />} />
             <Route path="ageing" element={<AgeingSetupPage />} />
             <Route path="ageing/config" element={<AgeingSetupPage />} />
-            <Route path="lease-rules" element={<LeaseARRulesPage />} />
-            <Route path="lease-rules/:agreementId/edit" element={<LeaseARRulesEditPage />} />
           </Route>
-          {/* Billing Collections: invoice schedules, ar overview, payments, credit notes, ar settings */}
+          {/* Billing Collections: invoices, invoice schedules, ar overview, payments, credit notes, ar settings */}
           <Route element={<BillingCollectionsLayout />}>
+            <Route path="invoices" element={<InvoicePage />} />
+            <Route path="invoices/create" element={<InvoiceCreatePage />} />
+            <Route path="invoices/:id" element={<InvoiceViewPage />} />
+            <Route path="invoices/:id/edit" element={<InvoiceEditPage />} />
             <Route path="schedules" element={<InvoiceSchedulesListWithCreateModal />} />
             <Route path="schedules/create" element={<InvoiceSchedulesListWithCreateModal />} />
             <Route path="schedules/:id/edit" element={<InvoiceScheduleEditPage />} />
@@ -279,12 +280,8 @@ export default function App() {
             <Route path="collections/credit-notes/create" element={<CreditNotesListWithCreateModal />} />
             <Route path="collections/credit-notes/:id" element={<CreditNoteViewPage />} />
             <Route path="ar-settings" element={<ARSettingsPage />} />
+            <Route path="pending-actions" element={<PendingActionsPage />} />
           </Route>
-          {/* Legacy invoice redirects */}
-          <Route path="invoices" element={<Navigate to="/rent-schedule-revenue/invoice" replace />} />
-          <Route path="invoices/create" element={<Navigate to="/rent-schedule-revenue/invoice/create" replace />} />
-          <Route path="invoices/:id/edit" element={<BillingInvoiceRedirect edit />} />
-          <Route path="invoices/:id" element={<BillingInvoiceRedirect />} />
         </Route>
 
         {/* Property routes */}

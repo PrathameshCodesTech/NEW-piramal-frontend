@@ -5,12 +5,12 @@ import {
   agreementsAPI,
   agreementStructuresAPI,
   allocationsAPI,
+  arRulesAPI,
   escalationTemplatesAPI,
   leaseAvailabilityAPI,
   leaseClauseConfigAPI,
   leaseNotesAPI,
   leaseDocumentsAPI,
-  leaseAmendmentsAPI,
   sitesAPI,
   tenantCompaniesAPI,
 } from "../../../../services/api";
@@ -30,6 +30,7 @@ import BasicPartiesTab from "./tabs/BasicPartiesTab";
 import PropertyAllocationTab from "./tabs/PropertyAllocationTab";
 import FinancialsTab from "./tabs/FinancialsTab";
 import ClauseConfigTab from "./tabs/ClauseConfigTab";
+import ARRulesTab from "./tabs/ARRulesTab";
 import NotesTab from "./tabs/NotesTab";
 import DocumentsTab from "./tabs/DocumentsTab";
 import ReviewActionsTab from "./tabs/ReviewActionsTab";
@@ -213,10 +214,26 @@ export default function AgreementViewPage() {
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [docForm, setDocForm] = useState(initialDocForm);
 
+  const [arRulesForm, setArRulesForm] = useState({
+    dispute_hold: false,
+    stop_interest_on_dispute: true,
+    stop_reminders_on_dispute: true,
+    credit_note_allowed: true,
+    credit_note_requires_approval: true,
+    max_credit_note_percent: "",
+    auto_reminder_enabled: true,
+    reminder_days_before_due: "7",
+    reminder_days_after_due: "7",
+    escalation_days: "30",
+  });
+  const [arRuleId, setArRuleId] = useState(null);
+  const [arRulesLoading, setArRulesLoading] = useState(false);
+
   const [savingBasic, setSavingBasic] = useState(false);
   const [savingFinancials, setSavingFinancials] = useState(false);
   const [savingAllocation, setSavingAllocation] = useState(false);
   const [savingClause, setSavingClause] = useState(false);
+  const [savingARRules, setSavingARRules] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -286,7 +303,7 @@ export default function AgreementViewPage() {
     sitesAPI.list().then((r) => setSites(r?.results || r || [])).catch(() => setSites([]));
     tenantCompaniesAPI.list().then((r) => setTenants(r?.results || r || [])).catch(() => setTenants([]));
     escalationTemplatesAPI
-      .list({ status: "ACTIVE" })
+      .list()
       .then((r) => setTemplates(r?.results || r || []))
       .catch(() => setTemplates([]));
     agreementStructuresAPI
@@ -393,6 +410,62 @@ export default function AgreementViewPage() {
     }
   };
 
+  const fetchARRules = async () => {
+    setArRulesLoading(true);
+    try {
+      const res = await arRulesAPI.byAgreement(id);
+      setArRuleId(res.id);
+      setArRulesForm({
+        dispute_hold: res.dispute_hold ?? false,
+        stop_interest_on_dispute: res.stop_interest_on_dispute ?? true,
+        stop_reminders_on_dispute: res.stop_reminders_on_dispute ?? true,
+        credit_note_allowed: res.credit_note_allowed ?? true,
+        credit_note_requires_approval: res.credit_note_requires_approval ?? true,
+        max_credit_note_percent: res.max_credit_note_percent != null ? String(res.max_credit_note_percent) : "",
+        auto_reminder_enabled: res.auto_reminder_enabled ?? true,
+        reminder_days_before_due: String(res.reminder_days_before_due ?? 7),
+        reminder_days_after_due: String(res.reminder_days_after_due ?? 7),
+        escalation_days: String(res.escalation_days ?? 30),
+      });
+    } catch {
+      /* 404 = no record yet, keep defaults */
+      setArRuleId(null);
+    } finally {
+      setArRulesLoading(false);
+    }
+  };
+
+  const handleSaveARRules = async (e) => {
+    e.preventDefault();
+    setSavingARRules(true);
+    try {
+      const payload = {
+        dispute_hold: arRulesForm.dispute_hold,
+        stop_interest_on_dispute: arRulesForm.stop_interest_on_dispute,
+        stop_reminders_on_dispute: arRulesForm.stop_reminders_on_dispute,
+        credit_note_allowed: arRulesForm.credit_note_allowed,
+        credit_note_requires_approval: arRulesForm.credit_note_requires_approval,
+        max_credit_note_percent: arRulesForm.max_credit_note_percent !== "" ? parseFloat(arRulesForm.max_credit_note_percent) : null,
+        auto_reminder_enabled: arRulesForm.auto_reminder_enabled,
+        reminder_days_before_due: parseInt(arRulesForm.reminder_days_before_due, 10) || 7,
+        reminder_days_after_due: parseInt(arRulesForm.reminder_days_after_due, 10) || 7,
+        escalation_days: parseInt(arRulesForm.escalation_days, 10) || 30,
+      };
+      if (arRuleId) {
+        await arRulesAPI.update(arRuleId, payload);
+      } else {
+        const res = await arRulesAPI.create({ ...payload, agreement: parseInt(id, 10) });
+        setArRuleId(res.id);
+      }
+      toast.success("AR rules saved");
+      goNext();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSavingARRules(false);
+    }
+  };
+
   useEffect(() => {
     fetchAgreement();
     fetchLookupData();
@@ -455,8 +528,9 @@ export default function AgreementViewPage() {
   useEffect(() => {
     if (activeTab === 2) fetchAllocationsAndUnits();
     if (activeTab === 4) fetchClauseConfig();
-    if (activeTab === 5) fetchNotes();
-    if (activeTab === 6) fetchDocuments();
+    if (activeTab === 5) fetchARRules();
+    if (activeTab === 6) fetchNotes();
+    if (activeTab === 7) fetchDocuments();
   }, [activeTab, data?.site]);
 
   useEffect(() => {
@@ -475,7 +549,7 @@ export default function AgreementViewPage() {
   };
 
   const goBack = () => setActiveTab((prev) => Math.max(prev - 1, 0));
-  const goNext = () => setActiveTab((prev) => Math.min(prev + 1, 7));
+  const goNext = () => setActiveTab((prev) => Math.min(prev + 1, 8));
 
   const handleSaveBasic = async (e) => {
     e.preventDefault();
@@ -862,6 +936,16 @@ export default function AgreementViewPage() {
       )}
 
       {activeTab === 5 && (
+        <ARRulesTab
+          form={arRulesForm}
+          setForm={setArRulesForm}
+          onSubmit={handleSaveARRules}
+          saving={savingARRules}
+          arRuleId={arRuleId}
+        />
+      )}
+
+      {activeTab === 6 && (
         <NotesTab
           noteText={noteText}
           setNoteText={setNoteText}
@@ -874,7 +958,7 @@ export default function AgreementViewPage() {
         />
       )}
 
-      {activeTab === 6 && (
+      {activeTab === 7 && (
         <DocumentsTab
           form={docForm}
           setForm={setDocForm}
@@ -887,7 +971,7 @@ export default function AgreementViewPage() {
         />
       )}
 
-      {activeTab === 7 && (
+      {activeTab === 8 && (
         <ReviewActionsTab
           data={data}
           updatingStatus={updatingStatus}
@@ -900,7 +984,7 @@ export default function AgreementViewPage() {
 
       <AgreementTabPager
         activeTab={activeTab}
-        totalTabs={8}
+        totalTabs={9}
         onBack={goBack}
         onNext={goNext}
       />

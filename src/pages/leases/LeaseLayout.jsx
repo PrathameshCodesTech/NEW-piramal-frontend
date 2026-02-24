@@ -6,18 +6,18 @@ import { LayoutList } from "lucide-react";
 
 const NAV_ITEMS = [
   {
-    key: "structures",
-    to: "/leases/agreement-structures",
-    label: "Agreement Structures",
-    icon: LayoutList,
-    match: (path) => path.startsWith("/leases/agreement-structures"),
-  },
-  {
     key: "escalations",
     to: "/leases/escalation-templates",
     label: "Escalation Templates",
     icon: TrendingUp,
     match: (path) => path.startsWith("/leases/escalation-templates"),
+  },
+  {
+    key: "structures",
+    to: "/leases/agreement-structures",
+    label: "Agreement Structures",
+    icon: LayoutList,
+    match: (path) => path.startsWith("/leases/agreement-structures"),
   },
 ];
 

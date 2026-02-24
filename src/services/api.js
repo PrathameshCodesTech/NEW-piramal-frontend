@@ -418,15 +418,6 @@ export const arRulesAPI = {
   byAgreement: (agreementId) =>
     apiRequest(`/api/v1/billing/ar-rules/by-agreement/${agreementId}/`),
 };
-export const leaseRulesAPI = {
-  get: (agreementId) =>
-    apiRequest(`/api/v1/billing/lease-rules/${agreementId}/rules/`),
-  update: (agreementId, payload) =>
-    apiRequest(`/api/v1/billing/lease-rules/${agreementId}/rules/`, {
-      method: "PATCH",
-      body: JSON.stringify(payload),
-    }),
-};
 export const ageingBucketsAPI = {
   ...crud("/api/v1/billing/ageing-buckets/"),
   initializeDefaults: () =>
@@ -459,6 +450,23 @@ export const arGlobalSettingsAPI = {
     apiRequest("/api/v1/billing/ar-global-settings/update/", {
       method: "PATCH",
       body: JSON.stringify(payload),
+    }),
+};
+export const pendingActionsAPI = {
+  list: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiRequest(`/api/v1/billing/pending-actions/${qs ? "?" + qs : ""}`);
+  },
+  count: () => apiRequest("/api/v1/billing/pending-actions/count/"),
+  apply: (id, note = "") =>
+    apiRequest(`/api/v1/billing/pending-actions/${id}/apply/`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
+    }),
+  dismiss: (id, note = "") =>
+    apiRequest(`/api/v1/billing/pending-actions/${id}/dismiss/`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
     }),
 };
 export const billingConfigBundleAPI = () => apiRequest("/api/v1/billing/config/");

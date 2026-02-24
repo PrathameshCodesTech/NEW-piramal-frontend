@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from "react-router-dom";
-import { Calendar, BarChart3, CreditCard, FileMinus, Settings } from "lucide-react";
+import { Calendar, BarChart3, CreditCard, FileMinus, Settings, Receipt, Bell } from "lucide-react";
 import { useState, useEffect } from "react";
 import { invoiceSchedulesAPI, paymentsAPI, creditNotesAPI } from "../../services/api";
 
@@ -10,6 +10,13 @@ const NAV_ITEMS = [
     label: "Invoice Schedules",
     icon: Calendar,
     match: (path) => path.startsWith("/billing/schedules"),
+  },
+  {
+    key: "invoices",
+    to: "/billing/invoices",
+    label: "Invoices",
+    icon: Receipt,
+    match: (path) => path.startsWith("/billing/invoices"),
   },
   {
     key: "ar-overview",
@@ -38,6 +45,13 @@ const NAV_ITEMS = [
     label: "Credit Notes",
     icon: FileMinus,
     match: (path) => path.startsWith("/billing/collections/credit-notes"),
+  },
+  {
+    key: "pending-actions",
+    to: "/billing/pending-actions",
+    label: "Pending Actions",
+    icon: Bell,
+    match: (path) => path.startsWith("/billing/pending-actions"),
   },
 ];
 

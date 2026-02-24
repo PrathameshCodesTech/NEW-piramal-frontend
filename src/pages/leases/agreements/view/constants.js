@@ -4,6 +4,7 @@ export const AGREEMENT_TABS = [
   "Property & Unit Allocation",
   "Financials",
   "Legal / Clause Config",
+  "AR Rules",
   "Notes",
   "Documents",
   "Review + Actions",
